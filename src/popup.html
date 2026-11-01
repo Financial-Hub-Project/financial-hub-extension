@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Financial Hub</title>
+    <style>
+      body { font: 13px/1.45 system-ui, sans-serif; width: 320px; margin: 0; padding: 14px; color: #111; }
+      h1 { font-size: 14px; margin: 0 0 6px; }
+      p { margin: 0 0 10px; color: #555; }
+      label { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+      button { width: 100%; margin-top: 8px; padding: 8px; border: 0; border-radius: 6px; background: #111; color: #fff; font-weight: 600; cursor: pointer; }
+      button.secondary { background: #eee; color: #111; }
+      button:disabled { opacity: .5; cursor: default; }
+      ol { margin: 10px 0 0; padding-left: 18px; color: #333; }
+      .error { color: #b00020; }
+      .warn { color: #8a5a00; }
+    </style>
+  </head>
+  <body>
+    <h1 id="title">Financial Hub</h1>
+    <p id="intro">Abre esta ventana desde la web de tu bróker con la sesión iniciada.</p>
+    <div id="controls" hidden>
+      <label><input type="radio" name="range" value="recent" checked /> <span id="recent-label">Últimos días</span></label>
+      <label><input type="radio" name="range" value="since" /> Desde <input type="date" id="since" /></label>
+      <p class="warn" id="confirmation" hidden>Este rango puede pedir una confirmación en la app del bróker.</p>
+      <button id="sync">Sincronizar con Financial Hub</button>
+      <button id="download" class="secondary">Descargar el paquete (pruebas)</button>
+    </div>
+    <ol id="log" aria-live="polite"></ol>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

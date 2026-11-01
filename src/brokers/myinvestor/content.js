@@ -1,0 +1,160 @@
+// MyInvestor adapter. Runs on newapp.myinvestor.es. When the popup asks, it reads the account through MyInvestor's
+// own API with the session this page already holds, and returns a bundle for Financial Hub.
+// The token never leaves this page: only the bundle (orders and cash movements) is returned.
+
+const API = 'https://api.myinvestor.es';
+const FORMAT = 'financial-hub/myinvestor-api';
+const SIGNATURE_POLL_MS = 3000;
+const SIGNATURE_TIMEOUT_MS = 5 * 60 * 1000;
+
+function token() {
+  const raw = localStorage.getItem('myinvestor-app:TOKEN');
+  if (!raw) throw new Error('Inicia sesión en MyInvestor en esta pestaña y vuelve a intentarlo.');
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'string' ? parsed : raw;
+  } catch {
+    return raw;
+  }
+}
+
+function headers(extra = {}) {
+  const set = { Authorization: `Bearer ${token()}`, Accept: 'application/json', ...extra };
+  const { fhDevice, fhApp } = document.documentElement.dataset;
+  if (fhDevice) set['x-device-id'] = fhDevice;
+  if (fhApp) set['x-myinvestor-app'] = fhApp;
+  return set;
+}
+
+async function call(path, init = {}) {
+  const response = await fetch(`${API}${path}`, { ...init, headers: headers(init.headers) });
+  if (response.status === 401)
+    throw new Error('La sesión de MyInvestor ha caducado. Recarga la página y vuelve a intentarlo.');
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    // An empty or non-JSON body is reported by status below.
+  }
+  return { status: response.status, data: body && body.payload ? body.payload.data : body };
+}
+
+async function get(path) {
+  const { status, data } = await call(path);
+  if (status !== 200) throw new Error(`MyInvestor respondió ${status} en ${path.split('?')[0]}`);
+  return data;
+}
+
+const day = (date) => date.toISOString().slice(0, 10);
+
+/** Keeps only the named fields: the bundle carries what Financial Hub reads and nothing else
+ * (no account numbers, no holder's id). */
+const pick = (object, keys) =>
+  object ? Object.fromEntries(keys.filter((key) => key in object).map((key) => [key, object[key]])) : null;
+const FUND_FIELDS = ['reference', 'isin', 'fundName', 'operationType', 'status', 'shares', 'market', 'currency'];
+const EXECUTION_FIELDS = ['operationNumber', 'executionDate', 'executedShares', 'netAmountFundCurrency', 'netAmountEUR'];
+const STOCK_FIELDS = ['id', 'status', 'operation', 'marketId'];
+const STOCK_DETAIL_FIELDS = [
+  'instrumentIsin', 'instrumentName', 'instrumentCurrency', 'executionDate', 'finishDate',
+  'executedShares', 'netAmountCurrency', 'netAmountEUR',
+];
+const FLOW_FIELDS = [
+  'operationDate', 'valueDate', 'operationType', 'concept', 'amount', 'flowType', 'currency',
+  'totalBalance', 'operationRef',
+];
+
+/**
+ * Cash movements of one account. Within the last 90 days MyInvestor answers at once; a longer
+ * range needs the user's approval in the MyInvestor app (PSD2): the request is sent to the phone,
+ * approved there, and repeated with its signature id.
+ */
+async function flows(accountUuid, from, to, log) {
+  const path = `/account/api/v3/account/${accountUuid}/flows?dateFrom=${from}&dateTo=${to}`;
+  const first = await call(path);
+  if (first.status === 200) return first.data;
+  if (first.status !== 202 || !first.data?.signatureRequestId)
+    throw new Error(`MyInvestor respondió ${first.status} al pedir los movimientos`);
+  const id = first.data.signatureRequestId;
+  if (!document.documentElement.dataset.fhDevice)
+    throw new Error('Navega un momento por MyInvestor y vuelve a intentarlo (falta el dispositivo).');
+  const sent = await call(`/signature/api/v3/signature/${id}?method=INAPP`, { method: 'POST' });
+  if (sent.status !== 200) throw new Error('MyInvestor no pudo enviar la firma al móvil');
+  log('Aprueba en la app de MyInvestor de tu móvil la solicitud de firma.');
+  const deadline = Date.now() + SIGNATURE_TIMEOUT_MS;
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, SIGNATURE_POLL_MS));
+    const state = await call(`/signature/api/v3/signature?signatureRequestId=${id}`);
+    const status = state.data?.status;
+    if (status === 'COMPLETE') break;
+    if (status && /REJECT|CANCEL|EXPIRE|ERROR/i.test(status))
+      throw new Error('La firma se rechazó o caducó.');
+    if (Date.now() > deadline) throw new Error('No se aprobó la firma a tiempo.');
+  }
+  const signed = await call(path, { headers: { 'x-signature-id': id } });
+  if (signed.status !== 200) throw new Error('MyInvestor no devolvió los movimientos firmados');
+  return signed.data;
+}
+
+async function collect({ from, to }, log) {
+  const securities = await get('/cperf-server/api/v2/securities-accounts/self-basic');
+  const cashAccounts = await get('/cperf-server/api/v2/cash-accounts/self');
+  const fundOrders = [];
+  const stockOrders = [];
+  for (const account of securities) {
+    const range = `dateFrom=${from}&dateTo=${to}`;
+    const funds = await get(`/cperf-server/api/v3/securities-accounts/${account.accountId}/orders?${range}`);
+    for (const order of funds) {
+      const detail =
+        order.status === 'COMPLETE'
+          ? await get(`/cperf-server/api/v2/securities-accounts/${account.accountId}/orders/${order.reference}`)
+          : null;
+      fundOrders.push({
+        ...pick(order, FUND_FIELDS),
+        detail: detail && {
+          relatedOperations: (detail.relatedOperations ?? []).map((item) => pick(item, EXECUTION_FIELDS)),
+        },
+      });
+    }
+    const stocks = await get(
+      `/broker/v2/stock-orders?stockAccountId=${account.accountId}&type=ALL&${range}`,
+    );
+    for (const order of stocks) {
+      const detail = order.status === 'COMPLETE' ? await get(`/broker/v2/stock-orders/${order.id}`) : null;
+      stockOrders.push({ ...pick(order, STOCK_FIELDS), detail: pick(detail, STOCK_DETAIL_FIELDS) });
+    }
+  }
+  log(`${fundOrders.length} órdenes de fondos y ${stockOrders.length} de acciones leídas.`);
+  const cash = [];
+  for (const account of cashAccounts) {
+    const data = await flows(account.accountUuid, from, to, log);
+    cash.push({
+      currency: account.currency,
+      flows: (data.flowList ?? []).map((flow) => pick(flow, FLOW_FIELDS)),
+    });
+  }
+  log(`${cash.reduce((sum, account) => sum + account.flows.length, 0)} movimientos de efectivo leídos.`);
+  return {
+    format: FORMAT,
+    version: 1,
+    capturedAt: new Date().toISOString(),
+    range: { from, to },
+    fundOrders,
+    stockOrders,
+    cash,
+  };
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, reply) => {
+  if (message?.type !== 'collect') return false;
+  const lines = [];
+  const log = (line) => {
+    lines.push(line);
+    chrome.runtime.sendMessage({ type: 'progress', line }).catch(() => {});
+  };
+  const to = day(new Date());
+  const from = message.from ?? day(new Date(Date.now() - 89 * 86_400_000));
+  collect({ from, to }, log)
+    .then((bundle) => reply({ ok: true, bundle: JSON.stringify(bundle), lines }))
+    .catch((error) => reply({ ok: false, error: String(error.message ?? error), lines }));
+  return true;
+});

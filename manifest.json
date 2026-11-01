@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Financial Hub",
+  "version": "0.1.0",
+  "description": "Sincroniza tu bróker con tu cartera de Financial Hub, leyendo tus datos en tu propia sesión.",
+  "minimum_chrome_version": "111",
+  "action": { "default_popup": "src/popup.html", "default_title": "Sincronizar con Financial Hub" },
+  "background": { "service_worker": "src/background.js", "type": "module" },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://newapp.myinvestor.es/*",
+    "https://api.myinvestor.es/*",
+    "https://financial-hub.es/*",
+    "http://localhost/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://newapp.myinvestor.es/*"],
+      "js": ["src/brokers/myinvestor/hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://newapp.myinvestor.es/*"],
+      "js": ["src/brokers/myinvestor/content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://financial-hub.es/carteras/importar*", "http://localhost/carteras/importar*"],
+      "js": ["src/financial-hub.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
