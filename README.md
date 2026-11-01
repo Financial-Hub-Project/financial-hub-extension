@@ -51,12 +51,10 @@ sin depender de nadie:
 | Trade Republic | La mayoría de usuarios usa solo el móvil: hace falta su web |
 | Freedom24 | |
 | eToro | |
-| Indexa Capital | |
 | Scalable Capital | |
 | Trading 212 | |
 | Revolut | |
 | Openbank, ING, Bankinter, Selfbank | Bancos con bróker y fondos |
-| Lightyear | |
 
 ¿Echas de menos alguno? Abre una issue con el nombre y qué productos tienes en él.
 
