@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Guía de contribución
+    url: https://github.com/Financial-Hub-Project/financial-hub-extension/blob/main/CONTRIBUTING.md
+    about: Cómo añadir un bróker, probarlo y arreglar fallos (también con tu agente).

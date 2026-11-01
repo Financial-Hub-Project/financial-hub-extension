@@ -1,0 +1,49 @@
+name: Fallo
+description: Algo no funciona al sincronizar o descargar el paquete.
+title: "Fallo: "
+labels: ["fallo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cuando falla, el popup enseña **Copiar informe para una issue**: púlsalo y pega el informe abajo. Solo contiene la versión, el bróker, el error, el código HTTP, recuentos y la estructura de los datos: ningún importe, fecha ni nombre.
+        ¿Usas un agente? Pídele: «sigue AGENTS.md de este repositorio para reportar este fallo».
+  - type: input
+    id: broker
+    attributes:
+      label: Bróker
+    validations:
+      required: true
+  - type: dropdown
+    id: step
+    attributes:
+      label: ¿Qué estabas haciendo?
+      options:
+        - Sincronizar con Financial Hub
+        - Descargar el paquete
+        - Explorar un bróker
+        - Revisar la vista previa en Financial Hub
+        - Otra cosa
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Informe de la extensión
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Qué esperabas y qué pasó
+      description: "Ejemplo: «esperaba 3 compras nuevas y la vista previa dice 0»."
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidad
+      options:
+        - label: No he pegado importes, nombres, números de cuenta, tokens ni capturas con mis datos.
+          required: true

@@ -5,10 +5,13 @@
   "description": "Browser extension that syncs a broker account into Financial Hub, read in the user's own session.",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test test/",
-    "validate": "node scripts/validate-bundle.mjs"
+    "validate": "node scripts/validate-bundle.mjs",
+    "scan": "node scripts/scan-data.mjs"
   }
 }

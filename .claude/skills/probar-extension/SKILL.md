@@ -4,7 +4,7 @@ description: "Trigger: probar extensión, testear adaptador, validar paquete, co
 license: MIT
 metadata:
   author: financial-hub
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
@@ -14,24 +14,24 @@ sincronización falle.
 
 ## Hard Rules
 
-- Ejecuta `npm run check` y `npm test` tras cualquier cambio e informa `<comando>: <resultado observado>`.
+- Ejecuta `npm run check`, `npm test` y `npm run scan` tras cualquier cambio e informa `<comando>: <resultado observado>`.
 - Nunca inventes resultados: si una prueba manual no se pudo hacer, dilo.
 - Nunca subas, pegues ni adjuntes un paquete real, un token o capturas con datos del usuario.
 - Nunca confirmes una importación en Financial Hub salvo en una cartera de pruebas y con permiso del usuario.
-- La contraseña del bróker la escribe siempre el usuario.
+- La contraseña del bróker la escribe siempre el usuario; las pruebas en su cuenta las hace él, guiado por ti.
 
 ## Decision Gates
 
 | Situación | Prueba |
 | --- | --- |
-| Cambio en núcleo o validación | `npm run check`, `npm test` |
+| Cambio en núcleo o validación | `npm run check`, `npm test`, `npm run scan` |
 | Cambio en un adaptador | Lo anterior + prueba manual con descarga y `npm run validate` |
 | Bróker `supported: true` | Lo anterior + **Sincronizar** y lectura de la vista previa |
-| Sincronización que falla | Diagnóstico con la tabla de errores de `CONTRIBUTING.md` |
+| Sincronización que falla | Diagnóstico con la tabla de errores de `CONTRIBUTING.md`; si no se arregla, `reportar-issue` |
 
 ## Execution Steps
 
-1. `npm run check` y `npm test`.
+1. `npm run check`, `npm test` y `npm run scan`.
 2. Recarga la extensión en `chrome://extensions` y la pestaña del bróker.
 3. Con sesión iniciada: popup → **Descargar el paquete (pruebas)**.
 4. `npm run validate -- <fichero>`; compara órdenes y movimientos con lo que muestra el bróker (fechas, cantidades, importes, signos, divisa).
@@ -47,3 +47,4 @@ Devuelve: cada comando con su resultado, qué prueba manual se hizo y con qué r
 
 - [CONTRIBUTING.md](../../../CONTRIBUTING.md) — pruebas y tabla de errores habituales.
 - [docs/formato-del-paquete.md](../../../docs/formato-del-paquete.md) — qué debe contener el paquete.
+- [docs/brokers/](../../../docs/brokers/) — qué comprobar en cada bróker.

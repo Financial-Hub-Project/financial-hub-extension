@@ -4,8 +4,9 @@
     <meta charset="utf-8" />
     <title>Financial Hub</title>
     <style>
-      body { font: 13px/1.45 system-ui, sans-serif; width: 320px; margin: 0; padding: 14px; color: #111; }
+      body { font: 13px/1.45 system-ui, sans-serif; width: 330px; margin: 0; padding: 14px; color: #111; }
       h1 { font-size: 14px; margin: 0 0 6px; }
+      h2 { font-size: 12px; margin: 14px 0 4px; color: #555; text-transform: uppercase; letter-spacing: .04em; }
       p { margin: 0 0 10px; color: #555; }
       label { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
       button { width: 100%; margin-top: 8px; padding: 8px; border: 0; border-radius: 6px; background: #111; color: #fff; font-weight: 600; cursor: pointer; }
@@ -27,6 +28,13 @@
       <button id="download" class="secondary">Descargar el paquete (pruebas)</button>
     </div>
     <ol id="log" aria-live="polite"></ol>
+    <button id="report" class="secondary" hidden>Copiar informe para una issue</button>
+    <section id="explore" hidden>
+      <h2>Colaborar</h2>
+      <p>Graba qué llamadas hace esta web, sin tus datos, para añadir o ampliar un bróker.</p>
+      <button id="record" class="secondary">Empezar a explorar</button>
+      <button id="map" class="secondary">Descargar mapa de la API</button>
+    </section>
     <script src="popup.js" type="module"></script>
   </body>
 </html>

@@ -1,0 +1,53 @@
+name: Nuevo bróker
+description: Pide o propone un bróker nuevo, con el mapa de su API (sin tus datos).
+title: "Nuevo bróker: "
+labels: ["nuevo bróker", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por ayudar. Con la extensión instalada, abre la web del bróker con tu sesión iniciada, pulsa la extensión → **Empezar a explorar**, recorre tus órdenes, movimientos y posiciones **sin recargar la página**, y pulsa **Descargar mapa de la API**. El mapa solo contiene rutas, nombres de campos y tipos: ningún dato tuyo.
+        ¿Usas un agente (Claude Code, Codex…)? Pídele: «sigue AGENTS.md de este repositorio para proponer el bróker X».
+  - type: input
+    id: broker
+    attributes:
+      label: Bróker
+      placeholder: "Trade Republic"
+    validations:
+      required: true
+  - type: input
+    id: web
+    attributes:
+      label: Dirección de su web (donde inicias sesión)
+      placeholder: "https://app.traderepublic.com"
+    validations:
+      required: true
+  - type: checkboxes
+    id: products
+    attributes:
+      label: Qué tienes en ese bróker
+      options:
+        - label: Acciones o ETF
+        - label: Fondos de inversión
+        - label: Planes de pensiones
+        - label: Efectivo / cuenta remunerada
+        - label: Otros (cuéntalo abajo)
+  - type: textarea
+    id: map
+    attributes:
+      label: Mapa de la API
+      description: Arrastra aquí el fichero `mapa-api-….json` que descargó la extensión.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notas
+      description: Qué páginas recorriste, si pide confirmaciones (2FA, firma), rarezas.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidad
+      options:
+        - label: No he pegado importes, nombres, números de cuenta, tokens ni capturas con mis datos.
+          required: true

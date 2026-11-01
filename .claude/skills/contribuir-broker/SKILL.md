@@ -4,14 +4,14 @@ description: "Trigger: añadir bróker, nuevo adaptador, cambiar adaptador, cont
 license: MIT
 metadata:
   author: financial-hub
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
 
 Cárgala antes de crear o cambiar un adaptador en `src/brokers/<id>/`, su entrada en
-`src/brokers.js`, su formato en `docs/formato-del-paquete.md` o su comprobación en
-`src/validate.js`.
+`src/brokers.js`, su guía en `docs/brokers/<id>.md`, su formato en `docs/formato-del-paquete.md`
+o su comprobación en `src/validate.js`.
 
 ## Hard Rules
 
@@ -29,20 +29,22 @@ Cárgala antes de crear o cambiar un adaptador en `src/brokers/<id>/`, su entrad
 
 | Caso | Acción |
 | --- | --- |
-| Bróker nuevo | Registro, adaptador, manifest, formato, `SHAPES`, test (pasos 1–7) |
+| Bróker nuevo | Registro, adaptador, manifest, guía, formato, `SHAPES`, test (pasos 1–8) |
+| Hay mapa de la API (issue o `explorar-broker`) | Úsalo como fuente; si falta una llamada, pide explorar esa página |
 | Cambio de campos del paquete | Incrementa `version` si rompe; actualiza formato, `SHAPES` y test |
 | Valor solo en memoria de la web | `hook.js` en `"world": "MAIN"`, mínimo y sin secretos |
 | Rango que pide confirmación al usuario | Avísalo en el popup con `recentDays`; espera la confirmación, no la saltes |
 
 ## Execution Steps
 
-1. Mapea en DevTools → Red las llamadas de órdenes, ejecuciones y movimientos: URL, parámetros, campos, autenticación, límites.
+1. Parte del mapa de la API (`explorar-broker`): llamadas de órdenes, ejecuciones, movimientos y posiciones, parámetros, cabeceras de autenticación y límites.
 2. Documenta `format`, `version: 1` y los campos en `docs/formato-del-paquete.md`.
 3. Añade la entrada en `src/brokers.js` (`supported: false`).
 4. Escribe `src/brokers/<id>/content.js` partiendo del de MyInvestor: responde a `collect` con `{ ok, bundle }` o `{ ok: false, error }` y devuelve `true`.
 5. Conecta `content_scripts` y `host_permissions` en `manifest.json`.
 6. Añade la forma en `SHAPES` de `src/validate.js` y un test sintético en `test/`.
-7. Prueba con la skill `probar-extension`.
+7. Crea `docs/brokers/<id>.md` desde `docs/brokers/_plantilla.md` y añade el bróker a la tabla del README.
+8. Prueba con la skill `probar-extension` y abre el PR con `resolver-issue`.
 
 ## Output Contract
 
@@ -53,3 +55,4 @@ Devuelve: ficheros cambiados, formato y versión del paquete, campos enviados y 
 - [CONTRIBUTING.md](../../../CONTRIBUTING.md) — arquitectura, pasos y errores habituales.
 - [PRIVACY.md](../../../PRIVACY.md) — qué se lee, se envía y nunca se toca.
 - [docs/formato-del-paquete.md](../../../docs/formato-del-paquete.md) — formatos de paquete.
+- [docs/brokers/_plantilla.md](../../../docs/brokers/_plantilla.md) — guía de cada bróker.

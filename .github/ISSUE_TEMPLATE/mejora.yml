@@ -1,0 +1,30 @@
+name: Mejora de un bróker
+description: Un producto o caso que el bróker tiene y la extensión aún no lee (planes de pensiones, carteras gestionadas…).
+title: "Mejora: "
+labels: ["mejora", "help wanted"]
+body:
+  - type: input
+    id: broker
+    attributes:
+      label: Bróker
+    validations:
+      required: true
+  - type: textarea
+    id: case
+    attributes:
+      label: Qué falta
+      placeholder: "Las aportaciones a planes de pensiones no aparecen."
+    validations:
+      required: true
+  - type: textarea
+    id: map
+    attributes:
+      label: Mapa de la API de esa parte de la web
+      description: Pulsa **Empezar a explorar**, abre solo las páginas de ese producto y adjunta el mapa descargado.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidad
+      options:
+        - label: No he pegado importes, nombres, números de cuenta, tokens ni capturas con mis datos.
+          required: true
