@@ -1,44 +1,44 @@
-# Financial Hub browser extension
+# Extensión de Financial Hub
 
-Brings your broker account into a [Financial Hub](https://financial-hub.es) portfolio without
-downloading statement files. The extension reads your account through the broker's own web
-app, **in your own signed-in tab**, and hands the result to Financial Hub's import, where you pick
-the portfolio and review a preview before anything is imported.
+Lleva tu cuenta del bróker a una cartera de [Financial Hub](https://financial-hub.es) sin descargar
+ficheros. La extensión lee tu cuenta a través de la propia web del bróker, **en tu pestaña con la
+sesión iniciada**, y entrega el resultado a la importación de Financial Hub, donde eliges la
+cartera y revisas una vista previa antes de importar nada.
 
-| Broker | Status |
+| Bróker | Estado |
 | --- | --- |
-| MyInvestor | Supported: orders (funds, stocks and ETFs), executions and cash movements |
+| MyInvestor | Disponible: órdenes (fondos, acciones y ETF), ejecuciones y movimientos de efectivo |
 
-Want another broker? See [CONTRIBUTING.md](CONTRIBUTING.md): each broker is a small adapter.
+¿Quieres otro bróker? Mira [CONTRIBUTING.md](CONTRIBUTING.md): cada bróker es un adaptador pequeño.
 
-## Install (developer mode)
+## Instalación (modo desarrollador)
 
-The extension is not in the Chrome Web Store yet. Load it yourself:
+La extensión aún no está en la Chrome Web Store. Instálala tú:
 
-1. Download this repository (`git clone` or **Code → Download ZIP** and unzip it).
-2. Open `chrome://extensions`, turn on **Developer mode** (top right), click **Load unpacked** and
-   pick the repository folder.
-3. Pin the extension to the toolbar.
+1. Descarga este repositorio (`git clone` o **Code → Download ZIP** y descomprímelo).
+2. Abre `chrome://extensions`, activa **Modo de desarrollador** (arriba a la derecha), pulsa
+   **Cargar descomprimida** y elige la carpeta del repositorio.
+3. Fija la extensión en la barra.
 
-Works in Chrome and other Chromium browsers (Edge, Brave) version 111 or later.
+Funciona en Chrome y en otros navegadores Chromium (Edge, Brave) desde la versión 111.
 
-## Use
+## Uso
 
-1. Open your broker's web app and sign in. You type your password; the extension never does.
-2. Click the extension → **Sincronizar con Financial Hub**.
-   - **Últimos 90 días** (default) is the regular update and needs nothing else.
-   - **Desde una fecha** further back: MyInvestor asks you to approve the request in its mobile
-     app (a European payment-services rule). Keep the popup open until it finishes.
-3. Financial Hub opens on the import with your account as one more file. Pick the portfolio
-   (your existing one to update it) and review the preview. Only movements the portfolio does not
-   have yet are added.
+1. Abre la web de tu bróker e inicia sesión. La contraseña la escribes tú; la extensión nunca.
+2. Pulsa la extensión → **Sincronizar con Financial Hub**.
+   - **Últimos 90 días** (por defecto) es la actualización normal y no pide nada más.
+   - **Desde una fecha** anterior: MyInvestor te pide aprobar la solicitud en su app del móvil
+     (una norma europea de servicios de pago). Deja el popup abierto hasta que termine.
+3. Financial Hub se abre en la importación con tu cuenta como un fichero más. Elige la cartera
+   (la tuya de siempre para actualizarla) y revisa la vista previa. Solo se añaden los movimientos
+   que la cartera aún no tiene.
 
-## Privacy
+## Privacidad
 
-Short version: your password and your broker session never leave the broker's page; the
-extension only sends the orders and movements Financial Hub needs, to Financial Hub, and only
-when you click. Details in [PRIVACY.md](PRIVACY.md).
+En corto: tu contraseña y tu sesión del bróker nunca salen de la web del bróker; la extensión solo
+envía las órdenes y movimientos que Financial Hub necesita, a Financial Hub y solo cuando pulsas.
+Detalle en [PRIVACY.md](PRIVACY.md).
 
-## License
+## Licencia
 
 [MIT](LICENSE).

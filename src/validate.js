@@ -27,7 +27,7 @@ const isNumber = (value) =>
   (typeof value === 'number' && Number.isFinite(value)) ||
   (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value));
 
-/** MyInvestor version 1: what Financial Hub's decoder reads (docs/bundle-format.md). */
+/** MyInvestor version 1: what Financial Hub's decoder reads (docs/formato-del-paquete.md). */
 function myinvestor(bundle, problems) {
   for (const key of ['fundOrders', 'stockOrders', 'cash'])
     if (!Array.isArray(bundle[key])) problems.push(`${key} must be an array`);

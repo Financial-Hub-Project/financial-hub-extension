@@ -10,7 +10,7 @@ export const BROKERS = [
     pages: ['https://newapp.myinvestor.es/'],
     /** The `?broker=` of Financial Hub's import page that takes this broker's bundle. */
     importBroker: 'myinvestor',
-    /** The `format` of the bundle the adapter builds (docs/bundle-format.md). */
+    /** The `format` of the bundle the adapter builds (docs/formato-del-paquete.md). */
     bundleFormat: 'financial-hub/myinvestor-api',
     /** The window message Financial Hub's import page takes the bundle with. */
     bundleMessage: 'financial-hub:myinvestor-api-bundle',

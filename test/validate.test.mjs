@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { brokerForUrl } from '../src/brokers.js';
 import { validateBundle } from '../src/validate.js';
 
-// A synthetic MyInvestor bundle in the exact shape the adapter builds (docs/bundle-format.md).
+// A synthetic MyInvestor bundle in the exact shape the adapter builds (docs/formato-del-paquete.md).
 const bundle = () => ({
   format: 'financial-hub/myinvestor-api',
   version: 1,

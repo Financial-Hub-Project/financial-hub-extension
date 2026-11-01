@@ -1,146 +1,160 @@
-# Contributing: add a broker, test it, fix it
+# Contribuir: añadir un bróker, probarlo y arreglarlo
 
-The extension is a set of small **broker adapters** around a shared core. An adapter reads the
-account from the broker's own web app, in the user's signed-in tab, and returns a **bundle**: a
-JSON document with the orders and cash movements Financial Hub needs. The core validates the
-bundle and hands it to Financial Hub, or saves it locally while you develop.
+La extensión es un conjunto de **adaptadores de bróker** pequeños alrededor de un núcleo común. Un
+adaptador lee la cuenta desde la propia web del bróker, en la pestaña del usuario con la sesión
+iniciada, y devuelve un **paquete**: un documento JSON con las órdenes y los movimientos de efectivo
+que necesita Financial Hub. El núcleo valida el paquete y se lo entrega a Financial Hub, o lo
+guarda en local mientras desarrollas.
 
-You can build and test an adapter end to end on your own account without any Financial Hub
-backend: the popup's **Descargar el paquete** button and `npm run validate` are all you need.
-Importing a new broker's bundle into Financial Hub also needs the Financial Hub team to accept the
-format on their side; see [Get it into Financial Hub](#get-it-into-financial-hub).
+Puedes construir y probar un adaptador de principio a fin con tu propia cuenta sin ningún backend de
+Financial Hub: el botón **Descargar el paquete** del popup y `npm run validate` es todo lo que
+necesitas. Importar el paquete de un bróker nuevo en Financial Hub requiere además que el equipo de
+Financial Hub acepte el formato en su lado; ver [Llevarlo a Financial Hub](#llevarlo-a-financial-hub).
 
-## How it fits together
+Si trabajas con un agente (Claude Code, Codex…), tiene dos skills con este mismo procedimiento:
+`.claude/skills/contribuir-broker` y `.claude/skills/probar-extension` (ver `AGENTS.md`).
+
+## Cómo encaja todo
 
 ```text
-broker tab (your session)                 extension                         Financial Hub tab
-┌──────────────────────────┐   collect   ┌──────────────────────┐  deliver  ┌──────────────────────┐
+pestaña del bróker (tu sesión)            extensión                         pestaña de Financial Hub
+┌──────────────────────────┐   collect   ┌──────────────────────┐  entrega  ┌──────────────────────┐
 │ src/brokers/<id>/        │ ◀────────── │ src/popup.js         │ ────────▶ │ src/financial-hub.js │
-│   hook.js    (optional)  │ ──bundle──▶ │   validate.js        │  session  │  posts the bundle to │
-│   content.js (adapter)   │             │ src/background.js    │  storage  │  the import page     │
+│   hook.js    (opcional)  │ ──paquete─▶ │   validate.js        │  storage  │  pasa el paquete a   │
+│   content.js (adaptador) │             │ src/background.js    │  sesión   │  la importación      │
 └──────────────────────────┘             └──────────────────────┘           └──────────────────────┘
 ```
 
-- `src/brokers.js`: the registry. One entry per broker: id, name, the pages it runs on, the
-  bundle format, whether Financial Hub can import it yet.
-- `src/brokers/<id>/content.js`: the adapter. A content script on the broker's pages that answers
-  the popup's `collect` message with a bundle.
-- `src/brokers/<id>/hook.js` (optional): a script in the page's own world, for values the page
-  only keeps in memory (MyInvestor: its device id header). Keep it tiny and never read secrets.
-- `src/validate.js`: the bundle checks (shared envelope, the broker's shape, no credentials).
-- `src/popup.js`, `src/background.js`, `src/financial-hub.js`: the shared core; you should not
-  need to change them for a new broker.
-- `docs/bundle-format.md`: the bundle formats.
+- `src/brokers.js`: el registro. Una entrada por bróker: id, nombre, páginas en las que se ejecuta,
+  formato del paquete y si Financial Hub ya puede importarlo.
+- `src/brokers/<id>/content.js`: el adaptador. Un content script en las páginas del bróker que
+  responde al mensaje `collect` del popup con un paquete.
+- `src/brokers/<id>/hook.js` (opcional): un script en el mundo de la propia página, para valores que
+  la web solo guarda en memoria (MyInvestor: la cabecera con el id del dispositivo). Mantenlo
+  mínimo y no leas nunca secretos.
+- `src/validate.js`: las comprobaciones del paquete (sobre común, forma de cada bróker, sin
+  credenciales).
+- `src/popup.js`, `src/background.js`, `src/financial-hub.js`: el núcleo común; no deberías
+  necesitar tocarlos para un bróker nuevo.
+- `docs/formato-del-paquete.md`: los formatos de paquete.
 
-## Add a broker, step by step
+## Añadir un bróker, paso a paso
 
-1. **Map the broker's web app.** Sign in to the broker in Chrome, open DevTools → **Network**, filter
-   by `Fetch/XHR`, and click through the pages that show your orders, executions and cash
-   movements. Note for each: the URL, the parameters (dates, account ids, paging), the
-   response fields, and how the page authenticates (a bearer token in `localStorage`, a cookie,
-   a header). Look for:
-   - every order with its **execution** (date, quantity, price or net amount, fees, currency);
-   - every **cash movement** with its date, type, description, signed amount and, if possible,
-     the running balance;
-   - a stable **reference** per order and movement (it lets Financial Hub avoid duplicates);
-   - limits: date ranges, paging, extra confirmations (MyInvestor asks for an in-app approval
-     beyond 90 days).
-2. **Write down the bundle format** in `docs/bundle-format.md`: a `format` name
-   (`financial-hub/<broker>-api`), `version: 1`, and the fields you will send. Send only what
-   Financial Hub needs (see [Rules](#rules)).
-3. **Register the broker** in `src/brokers.js` with `supported: false` until Financial Hub accepts
-   the format. The popup then offers only **Descargar el paquete** for it.
-4. **Add the adapter** at `src/brokers/<id>/content.js`, starting from the MyInvestor one:
-   - answer `chrome.runtime.onMessage` `{ type: 'collect', from? }` with
-     `{ ok: true, bundle: <JSON string> }` or `{ ok: false, error: <message for the user> }`, and
-     return `true` from the listener (the answer is asynchronous);
-   - report progress with `chrome.runtime.sendMessage({ type: 'progress', line })`;
-   - call the broker's API with `fetch` from the content script: it runs with the page's origin,
-     so the broker's own CORS rules apply and the session cookies or token the page uses work;
-   - build the bundle with an explicit field list per object (`pick` in the MyInvestor adapter),
-     never by spreading the API's response.
-5. **Wire it in `manifest.json`**: a `content_scripts` entry matching the broker's pages (and the
-   optional `hook.js` with `"world": "MAIN"`, `"run_at": "document_start"`), and
-   `host_permissions` for the pages and the API host.
-6. **Add its shape check** to `SHAPES` in `src/validate.js` and a test in `test/` with a
-   synthetic bundle (made-up values, never your real data).
-7. Run `npm run check` and `npm test`, then test on your account (next section).
+1. **Mapea la web del bróker.** Inicia sesión en el bróker en Chrome, abre DevTools → **Red**,
+   filtra por `Fetch/XHR` y recorre las páginas que muestran tus órdenes, ejecuciones y movimientos
+   de efectivo. Apunta de cada una la URL, los parámetros (fechas, ids de cuenta, paginación), los
+   campos de la respuesta y cómo se autentica la página (un token en `localStorage`, una cookie, una
+   cabecera). Busca:
+   - cada orden con su **ejecución** (fecha, cantidad, precio o importe neto, comisiones, divisa);
+   - cada **movimiento de efectivo** con fecha, tipo, descripción, importe con signo y, si existe,
+     el saldo acumulado;
+   - una **referencia** estable por orden y por movimiento (permite a Financial Hub no duplicar);
+   - los límites: rangos de fechas, paginación, confirmaciones extra (MyInvestor pide aprobar en la
+     app a partir de 90 días).
+2. **Documenta el formato del paquete** en `docs/formato-del-paquete.md`: un nombre de `format`
+   (`financial-hub/<broker>-api`), `version: 1` y los campos que vas a enviar. Envía solo lo que
+   Financial Hub necesita (ver [Reglas](#reglas)).
+3. **Registra el bróker** en `src/brokers.js` con `supported: false` hasta que Financial Hub acepte
+   el formato. El popup entonces solo ofrece **Descargar el paquete** para él.
+4. **Añade el adaptador** en `src/brokers/<id>/content.js`, partiendo del de MyInvestor:
+   - responde a `chrome.runtime.onMessage` `{ type: 'collect', from? }` con
+     `{ ok: true, bundle: <cadena JSON> }` o `{ ok: false, error: <mensaje para el usuario> }`, y
+     devuelve `true` desde el listener (la respuesta es asíncrona);
+   - informa del progreso con `chrome.runtime.sendMessage({ type: 'progress', line })`;
+   - llama a la API del bróker con `fetch` desde el content script: se ejecuta con el origen de la
+     página, así que se aplican las reglas CORS del propio bróker y funcionan las cookies o el token
+     que usa la página;
+   - construye el paquete con una lista explícita de campos por objeto (`pick` en el adaptador de
+     MyInvestor), nunca copiando la respuesta de la API entera.
+5. **Conéctalo en `manifest.json`**: una entrada en `content_scripts` para las páginas del bróker
+   (y el `hook.js` opcional con `"world": "MAIN"` y `"run_at": "document_start"`), y
+   `host_permissions` para las páginas y el host de la API.
+6. **Añade su comprobación de forma** en `SHAPES` de `src/validate.js` y un test en `test/` con un
+   paquete sintético (valores inventados, nunca tus datos reales).
+7. Ejecuta `npm run check` y `npm test`, y pruébalo con tu cuenta (siguiente apartado).
 
-## Test it
+## Probarlo
 
-No build step and no dependencies: Node 20+ for the checks, Chrome for the rest.
+Sin compilación ni dependencias: Node 20+ para las comprobaciones y Chrome para lo demás.
 
 ```bash
-npm run check   # every script parses, the manifest's files exist, each broker is wired
-npm test        # bundle validation and broker registry
+npm run check   # todos los scripts compilan, existen los ficheros del manifest, cada bróker está conectado
+npm test        # validación de paquetes y registro de brókers
 ```
 
-On your own account:
+Con tu propia cuenta:
 
-1. `chrome://extensions` → **Load unpacked** (first time) or the **reload** icon on the extension
-   card after each change. Reload the broker tab too, so the new content script is injected.
-2. Open the broker, sign in, click the extension → **Descargar el paquete (pruebas)**.
-3. Check the file: `npm run validate -- ~/Downloads/<id>-bundle-<date>.json`.
-4. Open it and compare a few orders and movements with what the broker shows: dates, quantities,
-   amounts, signs, currency.
-5. For a supported broker, also try **Sincronizar con Financial Hub** and read the import preview:
-   *Nuevos*, *Ya importados*, *Bloqueados* and the cash balance against the broker.
+1. `chrome://extensions` → **Cargar descomprimida** (la primera vez) o el icono de **recargar** de la
+   tarjeta de la extensión tras cada cambio. Recarga también la pestaña del bróker, para que se
+   inyecte el nuevo content script.
+2. Abre el bróker, inicia sesión y pulsa la extensión → **Descargar el paquete (pruebas)**.
+3. Comprueba el fichero: `npm run validate -- ~/Downloads/<id>-bundle-<fecha>.json`.
+4. Ábrelo y compara algunas órdenes y movimientos con lo que muestra el bróker: fechas, cantidades,
+   importes, signos y divisa.
+5. Si el bróker ya está soportado, prueba también **Sincronizar con Financial Hub** y lee la vista
+   previa de la importación: *Nuevos*, *Ya importados*, *Bloqueados* y el efectivo frente al bróker.
+   No confirmes la importación en una cartera que no sea de pruebas.
 
-To test against a local Financial Hub, point the extension to it from the service worker
-console (`chrome://extensions` → the extension → **Inspect views: service worker**):
+Para probar contra un Financial Hub local, apunta la extensión a él desde la consola del service
+worker (`chrome://extensions` → la extensión → **Inspeccionar vistas: service worker**):
 
 ```js
-chrome.storage.local.set({ origin: 'http://localhost:3000' }); // back: chrome.storage.local.remove('origin')
+chrome.storage.local.set({ origin: 'http://localhost:3000' }); // volver: chrome.storage.local.remove('origin')
 ```
 
-## Fix what goes wrong
+## Arreglar lo que falle
 
-Where to look:
+Dónde mirar:
 
-- **Adapter errors**: the broker tab's DevTools console (content scripts log there) and its
-  **Network** tab for the API calls and their status codes.
-- **Popup errors**: right-click the popup → **Inspect**.
-- **Service worker** (handing the bundle to Financial Hub): `chrome://extensions` → **Inspect views:
+- **Errores del adaptador**: la consola de DevTools de la pestaña del bróker (los content scripts
+  escriben ahí) y su pestaña **Red**, con las llamadas a la API y sus códigos de estado.
+- **Errores del popup**: clic derecho en el popup → **Inspeccionar**.
+- **Service worker** (la entrega a Financial Hub): `chrome://extensions` → **Inspeccionar vistas:
   service worker**.
-- **Financial Hub side**: the import page's console; the preview lists what was read, what is new
-  and what blocks.
+- **Lado de Financial Hub**: la consola de la página de importación; la vista previa enseña qué se
+  leyó, qué es nuevo y qué bloquea.
 
-Common problems:
+Problemas habituales:
 
-| Symptom | Cause | Fix |
+| Síntoma | Causa | Arreglo |
 | --- | --- | --- |
-| "Abre esta ventana desde la web de tu bróker…" | The active tab is not a page of a registered broker | Open the broker's web app; check `pages` in `src/brokers.js` |
-| "Could not establish connection. Receiving end does not exist." | The content script is not in that tab (installed or reloaded after the tab opened) | Reload the broker tab |
-| "La sesión … ha caducado" / HTTP 401 | The broker's token expired | Reload the broker page (it refreshes the session) and retry |
-| HTTP 202 instead of data (MyInvestor) | The range needs the in-app approval | Approve the request in the broker's mobile app; keep the popup open |
-| Nothing arrives at the phone (MyInvestor) | The signature request was created but not sent | Browse the broker a moment so `hook.js` learns the device id, then retry |
-| "El paquete no es válido: …" | The adapter built a wrong shape or included a forbidden key | Fix the adapter; `npm run validate` on the downloaded file shows every problem |
-| CORS error in the console | The API refuses requests from the page's origin | Call the API the web app itself calls, from the content script, not from the service worker |
-| Financial Hub opens but no file appears | The import page is on another origin than the configured one, or not on the broker's upload step | Check `origin` in the service worker storage; open the broker's import from the start |
-| The popup closed and the sync stopped | Chrome closes popups when they lose focus | Keep the popup open until it finishes (a known limitation) |
+| "Abre esta ventana desde la web de tu bróker…" | La pestaña activa no es una página de un bróker registrado | Abre la web del bróker; revisa `pages` en `src/brokers.js` |
+| "Could not establish connection. Receiving end does not exist." | El content script no está en esa pestaña (se instaló o recargó después de abrirla) | Recarga la pestaña del bróker |
+| "La sesión … ha caducado" / HTTP 401 | Caducó el token del bróker | Recarga la web del bróker (renueva la sesión) y repite |
+| HTTP 202 en vez de datos (MyInvestor) | El rango necesita aprobación en la app | Aprueba la solicitud en la app del bróker; deja el popup abierto |
+| No llega nada al móvil (MyInvestor) | La firma se creó pero no se envió | Navega un momento por el bróker para que `hook.js` aprenda el id de dispositivo y repite |
+| "El paquete no es válido: …" | El adaptador generó una forma incorrecta o una clave prohibida | Arregla el adaptador; `npm run validate` sobre el fichero descargado enseña todos los problemas |
+| Error de CORS en la consola | La API rechaza peticiones desde el origen de la página | Llama a la API que usa la propia web, desde el content script, no desde el service worker |
+| Se abre Financial Hub pero no aparece el fichero | La importación está en otro origen distinto del configurado, o no está en el paso de subida de ese bróker | Revisa `origin` en el almacenamiento del service worker; abre la importación del bróker desde el principio |
+| Se cerró el popup y se paró la sincronización | Chrome cierra los popups al perder el foco | Deja el popup abierto hasta que termine (limitación conocida) |
 
-When you report a bug, include the extension version, the broker, the step, the console error
-and the HTTP status. Never paste a real bundle, a token or a screenshot with your data.
+Cuando informes de un fallo, incluye la versión de la extensión, el bróker, el paso, el error de
+consola y el código HTTP. Nunca pegues un paquete real, un token ni capturas con tus datos.
 
-## Get it into Financial Hub
+## Llevarlo a Financial Hub
 
-Financial Hub has to understand a new bundle format before the **Sincronizar** button can be turned
-on (`supported: true`). Open an issue or a pull request with:
+Financial Hub tiene que entender un formato de paquete nuevo antes de poder activar el botón
+**Sincronizar** (`supported: true`). Abre una issue o un pull request con:
 
-- the adapter and its entry in `src/brokers.js` (`supported: false`);
-- the format in `docs/bundle-format.md`;
-- an **anonymised** sample bundle: same structure and realistic shapes, but invented values
-  (names, ISINs of public instruments are fine; amounts, dates and references made up);
-- what you checked on your own account (counts of orders and movements, any oddity).
+- el adaptador y su entrada en `src/brokers.js` (`supported: false`);
+- el formato en `docs/formato-del-paquete.md`;
+- un paquete de ejemplo **anonimizado**: misma estructura y formas realistas, pero valores
+  inventados (nombres e ISIN de instrumentos públicos valen; importes, fechas y referencias,
+  inventados);
+- qué has comprobado con tu cuenta (número de órdenes y movimientos, cualquier rareza).
 
-The Financial Hub team adds the format on their side and turns the broker on.
+El equipo de Financial Hub añade el formato en su lado y activa el bróker.
 
-## Rules
+## Reglas
 
-- **Never touch credentials.** Do not read, store or send passwords, PINs, one-time codes,
-  session cookies or tokens. Use the session the page already has, from the page itself.
-- **Send the minimum.** Only the fields Financial Hub needs; no account numbers, national ids,
-  addresses or anything that identifies the holder.
-- **Only on click.** No background polling, no scheduled syncs, no analytics, no remote code.
-- **Narrow permissions.** Match only the broker's own pages and API host.
-- **No real data in the repository.** Tests and samples use invented values.
+- **Nunca toques credenciales.** No leas, guardes ni envíes contraseñas, PIN, códigos de un solo
+  uso, cookies de sesión ni tokens. Usa la sesión que ya tiene la página, desde la propia página.
+- **Envía lo mínimo.** Solo los campos que Financial Hub necesita; ni números de cuenta, ni DNI, ni
+  direcciones, ni nada que identifique al titular.
+- **Solo al pulsar.** Nada de sondeos en segundo plano, sincronizaciones programadas, analítica ni
+  código remoto.
+- **Permisos estrechos.** Solo las páginas del bróker y el host de su API.
+- **Nada de datos reales en el repositorio.** Tests y ejemplos con valores inventados.
+- **Convenciones del código.** JavaScript sin dependencias ni compilación; identificadores y
+  comentarios del código en inglés; textos para el usuario y documentación en español; commits
+  con [Conventional Commits](https://www.conventionalcommits.org/es/) (`feat:`, `fix:`, `docs:`…).

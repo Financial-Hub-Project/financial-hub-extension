@@ -1,0 +1,55 @@
+---
+name: contribuir-broker
+description: "Trigger: añadir bróker, nuevo adaptador, cambiar adaptador, contribuir, soportar otro bróker. Añade o modifica un adaptador de bróker con las reglas del proyecto."
+license: MIT
+metadata:
+  author: financial-hub
+  version: "1.0"
+---
+
+## Activation Contract
+
+Cárgala antes de crear o cambiar un adaptador en `src/brokers/<id>/`, su entrada en
+`src/brokers.js`, su formato en `docs/formato-del-paquete.md` o su comprobación en
+`src/validate.js`.
+
+## Hard Rules
+
+- Nunca leas, guardes ni envíes contraseñas, PIN, códigos, cookies ni tokens; usa la sesión de la página desde la página.
+- Construye el paquete con listas explícitas de campos (`pick`); nunca copies una respuesta de la API entera.
+- No envíes números de cuenta, DNI, direcciones ni nada que identifique al titular.
+- Solo actúa al pulsar el usuario: sin sondeos, tareas programadas, analítica ni código remoto.
+- Permisos solo para las páginas del bróker y su API; nada de `<all_urls>`.
+- Un bróker nuevo entra con `supported: false` hasta que Financial Hub acepte su formato.
+- Sin dependencias ni compilación; código e identificadores en inglés; textos de usuario y documentación en español.
+- Tests y ejemplos con valores inventados; nunca datos reales en el repositorio.
+- Commits con Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`).
+
+## Decision Gates
+
+| Caso | Acción |
+| --- | --- |
+| Bróker nuevo | Registro, adaptador, manifest, formato, `SHAPES`, test (pasos 1–7) |
+| Cambio de campos del paquete | Incrementa `version` si rompe; actualiza formato, `SHAPES` y test |
+| Valor solo en memoria de la web | `hook.js` en `"world": "MAIN"`, mínimo y sin secretos |
+| Rango que pide confirmación al usuario | Avísalo en el popup con `recentDays`; espera la confirmación, no la saltes |
+
+## Execution Steps
+
+1. Mapea en DevTools → Red las llamadas de órdenes, ejecuciones y movimientos: URL, parámetros, campos, autenticación, límites.
+2. Documenta `format`, `version: 1` y los campos en `docs/formato-del-paquete.md`.
+3. Añade la entrada en `src/brokers.js` (`supported: false`).
+4. Escribe `src/brokers/<id>/content.js` partiendo del de MyInvestor: responde a `collect` con `{ ok, bundle }` o `{ ok: false, error }` y devuelve `true`.
+5. Conecta `content_scripts` y `host_permissions` en `manifest.json`.
+6. Añade la forma en `SHAPES` de `src/validate.js` y un test sintético en `test/`.
+7. Prueba con la skill `probar-extension`.
+
+## Output Contract
+
+Devuelve: ficheros cambiados, formato y versión del paquete, campos enviados y por qué hace falta cada uno, resultado de `npm run check` y `npm test`, y lo que queda pendiente en Financial Hub.
+
+## References
+
+- [CONTRIBUTING.md](../../../CONTRIBUTING.md) — arquitectura, pasos y errores habituales.
+- [PRIVACY.md](../../../PRIVACY.md) — qué se lee, se envía y nunca se toca.
+- [docs/formato-del-paquete.md](../../../docs/formato-del-paquete.md) — formatos de paquete.
