@@ -11,6 +11,55 @@ cartera y revisas una vista previa antes de importar nada.
 
 ¿Quieres otro bróker? Mira [CONTRIBUTING.md](CONTRIBUTING.md): cada bróker es un adaptador pequeño.
 
+## Se buscan colaboradores
+
+La extensión funciona con cuentas de MyInvestor de fondos, acciones y ETF, pero queda mucho por
+cubrir. Si tienes alguno de estos casos en tu cuenta, tu ayuda vale oro: abre una issue o un pull
+request siguiendo [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Pendiente en MyInvestor
+
+- [ ] **Carteras gestionadas (roboadvisor):** carteras indexadas, cartera metal, cartera red y el
+      resto de carteras gestionadas. Tienen su propia cuenta de efectivo y no las hemos probado.
+- [ ] **Planes de pensiones:** aportaciones, traspasos entre planes y posiciones.
+- [ ] **Traspasos de fondos desde o hacia otra entidad:** solo hemos visto traspasos internos.
+- [ ] **Traspasos de acciones a otra entidad** (`TRASPASO RV LIBRE DE PAGO`): hoy se leen pero
+      quedan bloqueados en Financial Hub para que el usuario los resuelva.
+- [ ] **Operaciones corporativas:** OPA, splits y contrasplits, derechos de suscripción, dividendos
+      en acciones (los eventos con elección del titular se ven en la API, pero no se importan).
+- [ ] **Dividendos en bruto:** la API solo da el importe neto; el bruto y la retención en origen
+      se estiman.
+- [ ] **Otros productos:** depósitos a plazo, cuenta en dólares, inversión en facturas (Sego),
+      Urbanitae, capital privado y préstamos.
+- [ ] **Más mercados de acciones:** hoy se reconocen NYSE, NASDAQ, XETRA, Mercado Continuo y
+      Toronto; cualquier otro código de mercado bloquea la operación.
+- [ ] **Firma de más de 90 días:** si se cierra el popup mientras se espera la aprobación en el
+      móvil, la sincronización se pierde.
+
+### Brókers que nos gustaría tener
+
+Cada uno necesita su adaptador. Si usas alguno, puedes empezar con **Descargar el paquete**
+sin depender de nadie:
+
+| Bróker | Notas |
+| --- | --- |
+| DEGIRO | Financial Hub ya importa sus ficheros; la extensión ahorraría descargarlos |
+| Interactive Brokers | Financial Hub ya importa sus extractos Flex |
+| MEXEM | Financial Hub ya importa sus extractos Flex |
+| Renta 4 | |
+| XTB | |
+| Trade Republic | La mayoría de usuarios usa solo el móvil: hace falta su web |
+| Freedom24 | |
+| eToro | |
+| Indexa Capital | |
+| Scalable Capital | |
+| Trading 212 | |
+| Revolut | |
+| Openbank, ING, Bankinter, Selfbank | Bancos con bróker y fondos |
+| Lightyear | |
+
+¿Echas de menos alguno? Abre una issue con el nombre y qué productos tienes en él.
+
 ## Instalación (modo desarrollador)
 
 La extensión aún no está en la Chrome Web Store. Instálala tú:
