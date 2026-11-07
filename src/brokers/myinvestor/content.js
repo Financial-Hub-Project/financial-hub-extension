@@ -6,6 +6,7 @@ const API = 'https://api.myinvestor.es';
 const FORMAT = 'financial-hub/myinvestor-api';
 const SIGNATURE_POLL_MS = 3000;
 const SIGNATURE_TIMEOUT_MS = 5 * 60 * 1000;
+const { checkComplete, dateWindows, readPages, readWindows } = globalThis.fhLists;
 
 function token() {
   const raw = localStorage.getItem('myinvestor-app:TOKEN');
@@ -36,14 +37,30 @@ async function call(path, init = {}) {
   } catch {
     // An empty or non-JSON body is reported by status below.
   }
-  return { status: response.status, data: body && body.payload ? body.payload.data : body };
+  return { status: response.status, body, data: body && body.payload ? body.payload.data : body };
 }
+
+/** A path fit for an error message (it ends up in public failure reports): ids become `{id}`. */
+const endpoint = (path) =>
+  path
+    .split('?')[0]
+    .split('/')
+    .map((part) => (part.length >= 6 && /\d/.test(part) ? '{id}' : part))
+    .join('/');
 
 async function get(path) {
   const { status, data } = await call(path);
-  if (status !== 200) throw new Error(`MyInvestor respondió ${status} en ${path.split('?')[0]}`);
+  if (status !== 200) throw new Error(`MyInvestor respondió ${status} en ${endpoint(path)}`);
   return data;
 }
+
+/** Every item of a list endpoint, following its pages when the response has them (lists.js). */
+const list = (path) =>
+  readPages(async (page) => {
+    const { status, body } = await call(page ? `${path}&${page.key}=${page.value}` : path);
+    if (status !== 200) throw new Error(`MyInvestor respondió ${status} en ${endpoint(path)}`);
+    return body;
+  });
 
 const day = (date) => date.toISOString().slice(0, 10);
 
@@ -66,12 +83,13 @@ const FLOW_FIELDS = [
 /**
  * Cash movements of one account. Within the last 90 days MyInvestor answers at once; a longer
  * range needs the user's approval in the MyInvestor app (PSD2): the request is sent to the phone,
- * approved there, and repeated with its signature id.
+ * approved there, and repeated with its signature id. One request covers the whole range, so a
+ * long range asks for one signature per cash account. Returns the response with its body.
  */
 async function flows(accountUuid, from, to, log) {
   const path = `/account/api/v3/account/${accountUuid}/flows?dateFrom=${from}&dateTo=${to}`;
   const first = await call(path);
-  if (first.status === 200) return first.data;
+  if (first.status === 200) return first;
   if (first.status !== 202 || !first.data?.signatureRequestId)
     throw new Error(`MyInvestor respondió ${first.status} al pedir los movimientos`);
   const id = first.data.signatureRequestId;
@@ -92,7 +110,7 @@ async function flows(accountUuid, from, to, log) {
   }
   const signed = await call(path, { headers: { 'x-signature-id': id } });
   if (signed.status !== 200) throw new Error('MyInvestor no devolvió los movimientos firmados');
-  return signed.data;
+  return signed;
 }
 
 async function collect({ from, to }, log) {
@@ -100,9 +118,17 @@ async function collect({ from, to }, log) {
   const cashAccounts = await get('/cperf-server/api/v2/cash-accounts/self');
   const fundOrders = [];
   const stockOrders = [];
+  const windows = dateWindows(from, to).length;
+  if (windows > 1) log(`Leyendo las órdenes en ${windows} tramos de un año…`);
   for (const account of securities) {
-    const range = `dateFrom=${from}&dateTo=${to}`;
-    const funds = await get(`/cperf-server/api/v3/securities-accounts/${account.accountId}/orders?${range}`);
+    // Orders are asked for one year at a time and kept once each, whatever the windows return.
+    const funds = await readWindows({
+      from,
+      to,
+      key: (order) => order.reference,
+      read: (start, end) =>
+        list(`/cperf-server/api/v3/securities-accounts/${account.accountId}/orders?dateFrom=${start}&dateTo=${end}`),
+    });
     for (const order of funds) {
       const detail =
         order.status === 'COMPLETE'
@@ -115,9 +141,13 @@ async function collect({ from, to }, log) {
         },
       });
     }
-    const stocks = await get(
-      `/broker/v2/stock-orders?stockAccountId=${account.accountId}&type=ALL&${range}`,
-    );
+    const stocks = await readWindows({
+      from,
+      to,
+      key: (order) => order.id,
+      read: (start, end) =>
+        list(`/broker/v2/stock-orders?stockAccountId=${account.accountId}&type=ALL&dateFrom=${start}&dateTo=${end}`),
+    });
     for (const order of stocks) {
       const detail = order.status === 'COMPLETE' ? await get(`/broker/v2/stock-orders/${order.id}`) : null;
       stockOrders.push({ ...pick(order, STOCK_FIELDS), detail: pick(detail, STOCK_DETAIL_FIELDS) });
@@ -126,11 +156,10 @@ async function collect({ from, to }, log) {
   log(`${fundOrders.length} órdenes de fondos y ${stockOrders.length} de acciones leídas.`);
   const cash = [];
   for (const account of cashAccounts) {
-    const data = await flows(account.accountUuid, from, to, log);
-    cash.push({
-      currency: account.currency,
-      flows: (data.flowList ?? []).map((flow) => pick(flow, FLOW_FIELDS)),
-    });
+    const { body, data } = await flows(account.accountUuid, from, to, log);
+    const flowList = data?.flowList ?? [];
+    checkComplete(body, flowList.length);
+    cash.push({ currency: account.currency, flows: flowList.map((flow) => pick(flow, FLOW_FIELDS)) });
   }
   log(`${cash.reduce((sum, account) => sum + account.flows.length, 0)} movimientos de efectivo leídos.`);
   return {

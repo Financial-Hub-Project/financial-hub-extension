@@ -37,6 +37,15 @@ Al entregar un paquete, la extensión abre la importación de Financial Hub con 
 | Web | `financial-hub-web`, `myinvestor-extension-modos-web` | W1–W2 | otro hilo | |
 | Servidor | `financial-hub-serverful`, `myinvestor-extension-modos-serverful` | S1–S2 | otro hilo | |
 
+### Tareas de la extensión
+
+| Tarea | Requisitos | Estado | Evidencia |
+| --- | --- | --- | --- |
+| Órdenes por ventanas de un año, sin duplicados y con páginas | E4 | hecha | `src/brokers/myinvestor/lists.js`, `test/myinvestor-lists.test.mjs`; `npm test` 8/8 |
+| Modos «Actualizar» / «Desde cero» y aviso de hueco | E1, E3 | pendiente | |
+| Lectura que no depende del popup y pestaña sin content script | E2, E5 | pendiente | |
+| Documentación de uso, contribución y privacidad | E1–E6 | pendiente | |
+
 ## Requisitos
 
 ### Extensión
@@ -133,3 +142,8 @@ La hace el usuario en su navegador; la contraseña la escribe él. Solo se apunt
 
 - 2026-11-07 Creado el frente con las tres unidades y el contrato `?modo=`. La extensión empieza
   por E4 (ventanas de órdenes) y sigue con E1–E3 y E5.
+- 2026-11-07 E4 hecha: las órdenes de fondos y de acciones se piden por ventanas de 365 días y se
+  deduplican por `reference` / `id`. `readPages` sigue `page` solo si la respuesta confirma la
+  página pedida; cualquier otra señal de «hay más» (también en `flows`) hace fallar la lectura con
+  los nombres de las señales. Las rutas de los mensajes de error cambian los ids por `{id}`, porque
+  el informe de fallo va a issues públicas.
