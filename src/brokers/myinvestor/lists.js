@@ -22,7 +22,8 @@ globalThis.fhLists = (() => {
 
   /** Consecutive [from, to] windows of at most `days` days that cover the range without overlap. */
   function dateWindows(from, to, days = WINDOW_DAYS) {
-    if (!(from <= to)) throw new Error(`El rango de fechas no es válido (${from} a ${to}).`);
+    // No dates in the message: it ends up in the failure report, which carries no values.
+    if (!(from <= to)) throw new Error('El rango de fechas no es válido.');
     const windows = [];
     for (let start = from; start <= to; start = shift(start, days)) {
       const end = shift(start, days - 1);

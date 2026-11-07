@@ -8,32 +8,69 @@
       h1 { font-size: 14px; margin: 0 0 6px; }
       h2 { font-size: 12px; margin: 14px 0 4px; color: #555; text-transform: uppercase; letter-spacing: .04em; }
       p { margin: 0 0 10px; color: #555; }
+      fieldset { border: 0; margin: 0 0 6px; padding: 0; }
+      legend { font-weight: 600; margin-bottom: 2px; }
       label { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+      label.choice { align-items: flex-start; }
+      label.choice input { margin-top: 3px; }
+      small { color: #555; }
+      .options { margin: 0 0 6px 4px; padding-left: 8px; border-left: 2px solid #eee; }
       button { width: 100%; margin-top: 8px; padding: 8px; border: 0; border-radius: 6px; background: #111; color: #fff; font-weight: 600; cursor: pointer; }
       button.secondary { background: #eee; color: #111; }
+      button.link { width: auto; margin: 4px 0 0; padding: 0; background: none; color: #0b57d0; text-decoration: underline; }
       button:disabled { opacity: .5; cursor: default; }
-      ol { margin: 10px 0 0; padding-left: 18px; color: #333; }
+      ol { margin: 6px 0 0; padding-left: 18px; color: #333; }
       .error { color: #b00020; }
       .warn { color: #8a5a00; }
+      .hint { color: #555; list-style: none; margin-left: -18px; }
+      .ok { color: #1b5e20; }
     </style>
   </head>
   <body>
     <h1 id="title">Financial Hub</h1>
     <p id="intro">Abre esta ventana desde la web de tu bróker con la sesión iniciada.</p>
     <div id="controls" hidden>
-      <label><input type="radio" name="range" value="recent" checked /> <span id="recent-label">Últimos días</span></label>
-      <label><input type="radio" name="range" value="since" /> Desde <input type="date" id="since" /></label>
-      <p class="warn" id="confirmation" hidden>Este rango puede pedir una confirmación en la app del bróker.</p>
+      <fieldset>
+        <legend>¿Qué quieres hacer?</legend>
+        <label class="choice">
+          <input type="radio" name="mode" value="update" checked />
+          <span>Actualizar una cartera<br /><small>Trae los movimientos recientes a una cartera que ya tienes en Financial Hub.</small></span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="mode" value="new" />
+          <span>Importar desde cero<br /><small>Lee la cuenta desde que la abriste, para una cartera nueva.</small></span>
+        </label>
+      </fieldset>
+      <div class="options" id="update-options">
+        <label><input type="radio" name="range" value="recent" checked /> <span id="recent-label">Últimos días</span></label>
+        <label><input type="radio" name="range" value="since" /> Desde <input type="date" id="since" /></label>
+        <div class="warn" id="gap" hidden>
+          <span id="gap-text"></span>
+          <button class="link" id="gap-fix" hidden></button>
+        </div>
+      </div>
+      <div class="options" id="new-options" hidden>
+        <label>Abrí la cuenta el <input type="date" id="opened" /></label>
+        <small>Pon la fecha de apertura de tu cuenta o una anterior, para no dejar nada fuera.</small>
+      </div>
+      <p class="warn" id="confirmation" hidden></p>
       <button id="sync">Sincronizar con Financial Hub</button>
       <button id="download" class="secondary">Descargar el paquete (pruebas)</button>
     </div>
-    <ol id="log" aria-live="polite"></ol>
-    <button id="report" class="secondary" hidden>Copiar informe para una issue</button>
+    <p id="notice" hidden></p>
+    <section id="run" hidden>
+      <h2 id="run-title"></h2>
+      <ol id="log" aria-live="polite"></ol>
+      <button id="save" hidden>Guardar el paquete</button>
+      <button id="report" class="secondary" hidden>Copiar informe para una issue</button>
+    </section>
     <section id="explore" hidden>
       <h2>Colaborar</h2>
       <p>Graba qué llamadas hace esta web, sin tus datos, para añadir o ampliar un bróker.</p>
       <button id="record" class="secondary">Empezar a explorar</button>
       <button id="map" class="secondary">Descargar mapa de la API</button>
+      <ol id="explore-log" aria-live="polite"></ol>
+      <button id="explore-report" class="secondary" hidden>Copiar informe para una issue</button>
     </section>
     <script src="popup.js" type="module"></script>
   </body>

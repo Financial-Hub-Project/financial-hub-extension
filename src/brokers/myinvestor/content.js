@@ -1,6 +1,7 @@
-// MyInvestor adapter. Runs on newapp.myinvestor.es. When the popup asks, it reads the account through MyInvestor's
-// own API with the session this page already holds, and returns a bundle for Financial Hub.
-// The token never leaves this page: only the bundle (orders and cash movements) is returned.
+// MyInvestor adapter. Runs on newapp.myinvestor.es. When the user asks (through the service
+// worker), it reads the account through MyInvestor's own API with the session this page already
+// holds, and sends a bundle for Financial Hub back to the service worker. The token never leaves
+// this page: only the bundle (orders and cash movements) and progress lines are sent.
 
 const API = 'https://api.myinvestor.es';
 const FORMAT = 'financial-hub/myinvestor-api';
@@ -173,17 +174,52 @@ async function collect({ from, to }, log) {
   };
 }
 
+/** The read in progress in this tab, if any: there is only ever one. */
+let current = null;
+const isDay = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+/** Sends the result to the service worker, which wakes up for it even if Chrome had stopped it
+ * while the user approved the signature. The popup may be closed by then. */
+async function send(result) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await chrome.runtime.sendMessage(result);
+    } catch (error) {
+      if (attempt === 3) return console.error('Financial Hub: the result of the read could not be sent', error);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+}
+
+// The service worker asks for a read with `collect` and gets an answer at once; the result comes
+// later as a `collected` message. `collect-status` tells whether that read is still going on here.
 chrome.runtime.onMessage.addListener((message, _sender, reply) => {
-  if (message?.type !== 'collect') return false;
+  if (message?.type === 'collect-status') {
+    reply({ runId: current });
+    return false;
+  }
+  if (message?.type !== 'collect' || typeof message.runId !== 'string') return false;
+  if (current) {
+    reply({ ok: false, busy: true });
+    return false;
+  }
+  const { runId } = message;
+  current = runId;
+  reply({ ok: true });
   const lines = [];
   const log = (line) => {
     lines.push(line);
-    chrome.runtime.sendMessage({ type: 'progress', line }).catch(() => {});
+    chrome.runtime.sendMessage({ type: 'progress', runId, line }).catch(() => {});
   };
-  const to = day(new Date());
-  const from = message.from ?? day(new Date(Date.now() - 89 * 86_400_000));
+  const to = isDay(message.to) ? message.to : day(new Date());
+  const from = isDay(message.from) ? message.from : day(new Date(Date.now() - 89 * 86_400_000));
   collect({ from, to }, log)
-    .then((bundle) => reply({ ok: true, bundle: JSON.stringify(bundle), lines }))
-    .catch((error) => reply({ ok: false, error: String(error.message ?? error), lines }));
-  return true;
+    .then((bundle) => ({ type: 'collected', runId, ok: true, bundle: JSON.stringify(bundle), lines }))
+    .catch((error) => ({ type: 'collected', runId, ok: false, error: String(error.message ?? error), lines }))
+    // The read counts as going on until the service worker has the result.
+    .then(send)
+    .finally(() => {
+      current = null;
+    });
+  return false;
 });

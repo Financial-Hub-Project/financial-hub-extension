@@ -51,16 +51,29 @@ proponer el bróker Trade Republic».
 ```text
 pestaña del bróker (tu sesión)            extensión                         pestaña de Financial Hub
 ┌──────────────────────────┐   collect   ┌──────────────────────┐  entrega  ┌──────────────────────┐
-│ src/brokers/<id>/        │ ◀────────── │ src/popup.js         │ ────────▶ │ src/financial-hub.js │
-│   hook.js    (opcional)  │ ──paquete─▶ │   validate.js        │  storage  │  pasa el paquete a   │
-│   content.js (adaptador) │             │ src/background.js    │  sesión   │  la importación      │
+│ src/brokers/<id>/        │ ◀────────── │ src/background.js    │ ────────▶ │ src/financial-hub.js │
+│   hook.js    (opcional)  │  progress,  │   run.js             │  storage  │  pasa el paquete a   │
+│   content.js (adaptador) │ ─collected▶ │   validate.js        │  sesión   │  la importación      │
 └──────────────────────────┘             └──────────────────────┘           └──────────────────────┘
+                                          ▲ start, status, saved
+                                          │ (el estado está en storage de sesión)
+                                         ┌──────────────────────┐
+                                         │ src/popup.js         │
+                                         │   modes.js           │
+                                         └──────────────────────┘
 ```
+
+El popup solo arranca la lectura y enseña su estado; se puede cerrar en cualquier momento (por
+ejemplo, para aprobar una firma en el móvil). La lectura vive en la pestaña del bróker y su
+resultado llega al service worker con un mensaje propio, que lo despierta aunque Chrome lo hubiera
+parado. El service worker valida el paquete, guarda el estado en `chrome.storage.session` y abre
+Financial Hub.
 
 - `src/brokers.js`: el registro. Una entrada por bróker: id, nombre, páginas en las que se ejecuta,
   formato del paquete y si Financial Hub ya puede importarlo.
-- `src/brokers/<id>/content.js`: el adaptador. Un content script en las páginas del bróker que
-  responde al mensaje `collect` del popup con un paquete.
+- `src/brokers/<id>/content.js`: el adaptador. Un content script en las páginas del bróker que,
+  cuando el service worker le manda `collect`, lee la cuenta y le devuelve el paquete con
+  `collected`.
 - `src/brokers/<id>/hook.js` (opcional): un script en el mundo de la propia página, para valores que
   la web solo guarda en memoria (MyInvestor: la cabecera con el id del dispositivo). Mantenlo
   mínimo y no leas nunca secretos.
@@ -69,8 +82,9 @@ pestaña del bróker (tu sesión)            extensión                         
 - `src/explorer.js` y `src/report.js`: las herramientas para colaborar (mapa de la API e informe de
   fallo), ambas sin valores del usuario.
 - `docs/brokers/<id>.md`: la guía de cada bróker (uso, qué lee, pendientes, limitaciones).
-- `src/popup.js`, `src/background.js`, `src/financial-hub.js`: el núcleo común; no deberías
-  necesitar tocarlos para un bróker nuevo.
+- `src/popup.js`, `src/background.js`, `src/run.js` (estados de una lectura), `src/modes.js`
+  (modos *Actualizar una cartera* e *Importar desde cero*, sus fechas y el aviso de hueco) y
+  `src/financial-hub.js`: el núcleo común; no deberías necesitar tocarlos para un bróker nuevo.
 - `docs/formato-del-paquete.md`: los formatos de paquete.
 
 ## Añadir un bróker, paso a paso
@@ -92,10 +106,15 @@ pestaña del bróker (tu sesión)            extensión                         
 3. **Registra el bróker** en `src/brokers.js` con `supported: false` hasta que Financial Hub acepte
    el formato. El popup entonces solo ofrece **Descargar el paquete** para él.
 4. **Añade el adaptador** en `src/brokers/<id>/content.js`, partiendo del de MyInvestor:
-   - responde a `chrome.runtime.onMessage` `{ type: 'collect', from? }` con
-     `{ ok: true, bundle: <cadena JSON> }` o `{ ok: false, error: <mensaje para el usuario> }`, y
-     devuelve `true` desde el listener (la respuesta es asíncrona);
-   - informa del progreso con `chrome.runtime.sendMessage({ type: 'progress', line })`;
+   - responde a `chrome.runtime.onMessage` `{ type: 'collect', runId, from, to }` **en el acto**
+     con `{ ok: true }` (o `{ ok: false, busy: true }` si ya hay una lectura en esa pestaña) y lee
+     la cuenta después: una lectura puede durar minutos esperando una firma;
+   - informa del progreso con `chrome.runtime.sendMessage({ type: 'progress', runId, line })`;
+   - al terminar envía `chrome.runtime.sendMessage({ type: 'collected', runId, ok: true, bundle:
+     <cadena JSON>, lines })` o `{ type: 'collected', runId, ok: false, error: <mensaje para el
+     usuario>, lines }`; el service worker valida, guarda y entrega aunque el popup esté cerrado;
+   - responde a `{ type: 'collect-status' }` con `{ runId }` de la lectura en curso (o `null`), para
+     que la extensión sepa si se interrumpió al recargar la pestaña;
    - llama a la API del bróker con `fetch` desde el content script: se ejecuta con el origen de la
      página, así que se aplican las reglas CORS del propio bróker y funcionan las cookies o el token
      que usa la página;
@@ -148,8 +167,9 @@ Dónde mirar:
 - **Errores del adaptador**: la consola de DevTools de la pestaña del bróker (los content scripts
   escriben ahí) y su pestaña **Red**, con las llamadas a la API y sus códigos de estado.
 - **Errores del popup**: clic derecho en el popup → **Inspeccionar**.
-- **Service worker** (la entrega a Financial Hub): `chrome://extensions` → **Inspeccionar vistas:
-  service worker**.
+- **Service worker** (el estado de la lectura, la validación y la entrega a Financial Hub):
+  `chrome://extensions` → **Inspeccionar vistas: service worker**. El estado de cada bróker está en
+  `chrome.storage.session` (`run:<id>`).
 - **Lado de Financial Hub**: la consola de la página de importación; la vista previa enseña qué se
   leyó, qué es nuevo y qué bloquea.
 
@@ -158,14 +178,15 @@ Problemas habituales:
 | Síntoma | Causa | Arreglo |
 | --- | --- | --- |
 | "Abre esta ventana desde la web de tu bróker…" | La pestaña activa no es una página de un bróker registrado | Abre la web del bróker; revisa `pages` en `src/brokers.js` |
-| "Could not establish connection. Receiving end does not exist." | El content script no está en esa pestaña (se instaló o recargó después de abrirla) | Recarga la pestaña del bróker |
+| "Recarga la pestaña de <bróker>…" | El content script no está en esa pestaña (la extensión se instaló o recargó después de abrirla) | Recarga la pestaña del bróker |
+| "La lectura se interrumpió…" | Se cerró o recargó la pestaña del bróker durante la lectura | Repite la lectura sin cerrar ni recargar esa pestaña |
 | "La sesión … ha caducado" / HTTP 401 | Caducó el token del bróker | Recarga la web del bróker (renueva la sesión) y repite |
-| HTTP 202 en vez de datos (MyInvestor) | El rango necesita aprobación en la app | Aprueba la solicitud en la app del bróker; deja el popup abierto |
+| HTTP 202 en vez de datos (MyInvestor) | El rango necesita aprobación en la app | Aprueba la solicitud en la app del bróker; puedes cerrar el popup, la lectura sigue en la pestaña |
+| "MyInvestor devolvió una lista con más páginas…" | La API pagina una lista y la extensión no sabe pedir la página siguiente | Abre una issue «Fallo» con el informe (lleva los nombres de los campos de paginación, sin valores) y el mapa de la API de esa página |
 | No llega nada al móvil (MyInvestor) | La firma se creó pero no se envió | Navega un momento por el bróker para que `hook.js` aprenda el id de dispositivo y repite |
 | "El paquete no es válido: …" | El adaptador generó una forma incorrecta o una clave prohibida | Arregla el adaptador; `npm run validate` sobre el fichero descargado enseña todos los problemas |
 | Error de CORS en la consola | La API rechaza peticiones desde el origen de la página | Llama a la API que usa la propia web, desde el content script, no desde el service worker |
 | Se abre Financial Hub pero no aparece el fichero | La importación está en otro origen distinto del configurado, o no está en el paso de subida de ese bróker | Revisa `origin` en el almacenamiento del service worker; abre la importación del bróker desde el principio |
-| Se cerró el popup y se paró la sincronización | Chrome cierra los popups al perder el foco | Deja el popup abierto hasta que termine (limitación conocida) |
 
 Cuando informes de un fallo, incluye la versión de la extensión, el bróker, el paso, el error de
 consola y el código HTTP. Nunca pegues un paquete real, un token ni capturas con tus datos.

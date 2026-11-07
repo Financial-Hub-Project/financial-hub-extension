@@ -33,7 +33,7 @@ Al entregar un paquete, la extensión abre la importación de Financial Hub con 
 
 | Unidad | Repositorio y rama | Requisitos | Estado | Evidencia |
 | --- | --- | --- | --- | --- |
-| Extensión | `financial-hub-extension`, `myinvestor-extension-modos` | E1–E6 | en curso | |
+| Extensión | `financial-hub-extension`, `myinvestor-extension-modos` | E1–E6 | hecha (pendiente de prueba manual con la cuenta real) | Tareas de la extensión, abajo |
 | Web | `financial-hub-web`, `myinvestor-extension-modos-web` | W1–W2 | otro hilo | |
 | Servidor | `financial-hub-serverful`, `myinvestor-extension-modos-serverful` | S1–S2 | otro hilo | |
 
@@ -41,10 +41,10 @@ Al entregar un paquete, la extensión abre la importación de Financial Hub con 
 
 | Tarea | Requisitos | Estado | Evidencia |
 | --- | --- | --- | --- |
-| Órdenes por ventanas de un año, sin duplicados y con páginas | E4 | hecha | `src/brokers/myinvestor/lists.js`, `test/myinvestor-lists.test.mjs`; `npm test` 8/8 |
-| Modos «Actualizar» / «Desde cero» y aviso de hueco | E1, E3 | pendiente | |
-| Lectura que no depende del popup y pestaña sin content script | E2, E5 | pendiente | |
-| Documentación de uso, contribución y privacidad | E1–E6 | pendiente | |
+| Órdenes por ventanas de un año, sin duplicados y con páginas | E4 | hecha (sin comprobar con datos reales) | `src/brokers/myinvestor/lists.js`, `test/myinvestor-lists.test.mjs`; `npm test` 8/8 en su commit |
+| Modos «Actualizar» / «Desde cero» y aviso de hueco | E1, E3 | hecha | `src/modes.js`, `src/popup.*`, `test/modes.test.mjs`; integración simulada (abajo) |
+| Lectura que no depende del popup y pestaña sin content script | E2, E5 | hecha | `src/run.js`, `src/background.js`, `src/brokers/myinvestor/content.js`, `test/run.test.mjs`; integración simulada (abajo) |
+| Documentación de uso, contribución y privacidad | E1–E6 | hecha | `docs/brokers/myinvestor.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `docs/formato-del-paquete.md`, skill `contribuir-broker` |
 
 ## Requisitos
 
@@ -147,3 +147,16 @@ La hace el usuario en su navegador; la contraseña la escribe él. Solo se apunt
   página pedida; cualquier otra señal de «hay más» (también en `flows`) hace fallar la lectura con
   los nombres de las señales. Las rutas de los mensajes de error cambian los ids por `{id}`, porque
   el informe de fallo va a issues públicas.
+- 2026-11-07 E1, E2, E3, E5 y E6 hechas. El popup solo arranca la lectura (`start`) y enseña el
+  estado que guarda el service worker en `chrome.storage.session` (`run:<bróker>`); el content
+  script responde a `collect` al momento y envía el resultado con `collected`; el service worker
+  valida, guarda y abre Financial Hub con `?modo=`. `chrome.storage.local` guarda solo
+  `lastTo:<bróker>` cuando la importación recoge el paquete. Sin permisos nuevos: el manifest solo
+  añade `lists.js` a los scripts del adaptador.
+- 2026-11-07 Evidencia sin Chrome: `npm run check`, `npm test` (9/9) y `npm run scan` en verde, y
+  una comprobación de integración desechable (fuera del repositorio) que simula la mensajería de
+  Chrome, una API de MyInvestor inventada con firma PSD2 y un DOM mínimo del popup: 19 de 19
+  comprobaciones, entre ellas el reinicio del service worker durante la firma, el popup cerrado y
+  reabierto, la descarga con el popup cerrado, la doble pulsación, la pestaña recargada durante la
+  lectura, la pestaña sin content script y que ni el token ni el id de dispositivo llegan a ningún
+  almacenamiento. Falta la prueba manual con la cuenta real (sección anterior).

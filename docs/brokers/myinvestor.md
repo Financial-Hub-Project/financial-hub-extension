@@ -12,12 +12,20 @@
 ## Uso
 
 1. Abre `newapp.myinvestor.es` e inicia sesión (la contraseña la escribes tú).
-2. Pulsa la extensión → **Sincronizar con Financial Hub**:
-   - **Últimos 90 días** (por defecto): la actualización normal, sin pasos extra.
-   - **Desde una fecha** anterior a 90 días: MyInvestor manda una solicitud de firma a la app de tu
-     móvil (norma europea PSD2). Apruébala y deja el popup abierto hasta que termine.
-3. En Financial Hub elige tu cartera de MyInvestor (o una nueva) y revisa la vista previa. Solo se
-   añade lo que la cartera aún no tiene, aunque la importaras antes con los ficheros de Inversis.
+2. Pulsa la extensión y elige qué quieres hacer:
+   - **Actualizar una cartera** (por defecto): trae los **últimos 90 días**, sin pasos extra, a una
+     cartera que ya tienes. Puedes elegir **Desde** otra fecha. Si la última entrega a Financial
+     Hub desde este navegador es de hace más de 89 días, o no hay ninguna, la extensión avisa de
+     que quedaría un hueco y propone leer desde esa fecha.
+   - **Importar desde cero**: para una cartera nueva. Pon la fecha de apertura de tu cuenta (o una
+     anterior) para no dejar nada fuera.
+3. Pulsa **Sincronizar con Financial Hub**. Para más de 90 días, MyInvestor manda una solicitud de
+   firma a la app de tu móvil (norma europea PSD2): apruébala. Puedes cerrar el popup mientras
+   tanto; la lectura sigue en la pestaña de MyInvestor (no la cierres ni la recargues) y, al
+   reabrir el popup, ves en qué va o qué falló.
+4. Se abre Financial Hub: con *Importar desde cero*, para crear la cartera nueva; con *Actualizar*,
+   para elegir la que actualizas. Revisa la vista previa. Solo se añade lo que la cartera aún no
+   tiene, aunque la importaras antes con los ficheros de Inversis.
 
 ## Qué lee
 
@@ -26,6 +34,10 @@
 - Órdenes de acciones y ETF y su ejecución (fecha, liquidación, títulos, importe neto en la divisa
   del valor y en euros).
 - Movimientos de cada cuenta de efectivo con su saldo acumulado.
+
+Las órdenes se piden por tramos de un año y sin duplicados; los movimientos de efectivo, en una
+sola petición por cuenta, así que un rango de más de 90 días pide una firma por cada cuenta de
+efectivo.
 
 ## Pendiente (se buscan colaboradores)
 
@@ -47,8 +59,14 @@ explorar**, recórrela y adjunta el mapa a una issue **Mejora de un bróker**.
 
 ## Limitaciones conocidas
 
-- Si cierras el popup mientras esperas la firma de más de 90 días, la sincronización se pierde.
-- La primera vez tras instalar o recargar la extensión, recarga también la pestaña de MyInvestor.
+- La primera vez tras instalar o recargar la extensión, recarga también la pestaña de MyInvestor
+  (el popup te lo pide).
+- La lectura vive en la pestaña de MyInvestor: si la cierras o la recargas antes de que termine,
+  se interrumpe y hay que repetirla.
+- El aviso de hueco solo conoce las entregas hechas desde este navegador; Financial Hub hace su
+  propia comprobación al importar.
+- Los rangos de varios años por tramos aún no se han comprobado con una cuenta real: qué falta
+  comprobar está en [`odd/tasks/myinvestor-extension-modos.md`](../../odd/tasks/myinvestor-extension-modos.md).
 - La firma de más de 90 días necesita que hayas navegado un momento por la web (la extensión
   aprende así el id de dispositivo que exige MyInvestor).
 

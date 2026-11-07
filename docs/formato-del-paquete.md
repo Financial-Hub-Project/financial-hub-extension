@@ -1,7 +1,7 @@
 # Formatos de paquete
 
-Un paquete es un documento JSON en UTF-8, de 4 MB como máximo, que el popup valida
-(`src/validate.js`) antes de entregarlo a Financial Hub o guardarlo.
+Un paquete es un documento JSON en UTF-8, de 4 MB como máximo, que la extensión valida
+(`src/validate.js`, en el service worker) antes de entregarlo a Financial Hub o guardarlo.
 
 ## Sobre (todos los brókers)
 
@@ -92,6 +92,8 @@ Notas de MyInvestor:
 
 - Los movimientos de los últimos 90 días llegan al momento; un rango más largo necesita que el
   titular lo apruebe en la app de MyInvestor (el adaptador envía la solicitud y la espera).
+- Las órdenes de un rango largo se piden por ventanas de un año y se deduplican por `reference` /
+  `id`; el paquete es el mismo que con un único rango.
 - El importe del listado de órdenes de fondos es una estimación al dar la orden; el importe
   ejecutado está en `detail.relatedOperations`.
 - Los dividendos solo llegan como movimientos de efectivo, netos de retención.
