@@ -46,6 +46,16 @@ Al entregar un paquete, la extensión abre la importación de Financial Hub con 
 | Lectura que no depende del popup y pestaña sin content script | E2, E5 | hecha | `src/run.js`, `src/background.js`, `src/brokers/myinvestor/content.js`, `test/run.test.mjs`; integración simulada (abajo) |
 | Documentación de uso, contribución y privacidad | E1–E6 | hecha | `docs/brokers/myinvestor.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `docs/formato-del-paquete.md`, skill `contribuir-broker` |
 
+### Tareas de cierre del frente (hilo coordinador, 2026-11-08)
+
+| Tarea | Requisitos | Ruta | Estado | Evidencia |
+| --- | --- | --- | --- | --- |
+| Texto de la incidencia del hueco en web | S2, W3 | delegada: escritor bien definido (Sol medium) en el worktree de web | pendiente | |
+| Servidor al día con `main` | S1, S2 | en línea (un solo conflicto en `docs/api/CHANGELOG.md`) | pendiente | |
+| Prueba manual con la cuenta real | E1–E5, W1–W3, S1–S2 | en línea con el usuario (necesita su navegador, contraseña y firma) | pendiente | |
+| Correcciones de la prueba | según lo que salga | según tamaño | pendiente | |
+| Revisión y entrega | todos | `cross-review` en draft; ready y fusión servidor → web → extensión bajo `delivery` | pendiente | |
+
 ## Requisitos
 
 ### Extensión
@@ -85,6 +95,11 @@ Al entregar un paquete, la extensión abre la importación de Financial Hub con 
   valor ausente o desconocido mantiene el comportamiento actual.
 - **W2. Preselección de cartera.** `nueva` lleva a crear una cartera; `actualizar` preselecciona la
   cartera de MyInvestor existente. El usuario sigue eligiendo y confirmando la vista previa.
+- **W3. Texto del hueco.** La incidencia bloqueante `cash_history_gap` del servidor
+  (`details: { currency, from, to }`, en `FILE_ASKS`) se pinta con el texto propuesto en
+  serverful#1669, sección «Qué debería mostrar la web», en lugar del genérico «Incidencia»; su
+  acción es volver a sincronizar desde `from` (o subir el extracto de efectivo de Inversis de esas
+  fechas), no el «sube los ficheros otra vez» genérico.
 
 ### Servidor (hilo de `financial-hub-serverful`)
 
@@ -160,3 +175,8 @@ La hace el usuario en su navegador; la contraseña la escribe él. Solo se apunt
   reabierto, la descarga con el popup cerrado, la doble pulsación, la pestaña recargada durante la
   lectura, la pestaña sin content script y que ni el token ni el id de dispositivo llegan a ningún
   almacenamiento. Falta la prueba manual con la cuenta real (sección anterior).
+- 2026-11-08 Cierre del frente en un hilo coordinador: W3 (texto del hueco en web), servidor al
+  día con `main` (17 commits por detrás; conflicto solo en `docs/api/CHANGELOG.md`), prueba
+  manual con la cuenta real (lab con `--serverful` y `--web` de las ramas del frente), revisión y
+  fusión en el orden servidor → web → extensión. Las tres fusiones son squash. Worktrees en
+  `~/Projects/financial-hub/worktrees/myinvestor-extension-modos*`.
