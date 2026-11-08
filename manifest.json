@@ -39,6 +39,7 @@
         "https://newapp.myinvestor.es/*"
       ],
       "js": [
+        "src/brokers/myinvestor/lists.js",
         "src/brokers/myinvestor/content.js"
       ],
       "run_at": "document_idle"

@@ -1,94 +1,45 @@
-// The popup: finds the broker of the active tab, picks the range, asks that tab's adapter for the
-// bundle, and either hands it to Financial Hub or saves it locally for testing. Its contribution
-// tools record an unknown broker's API and copy a failure report, both without the user's values.
+// The popup: picks the mode and the dates, asks the service worker to start a read in the
+// broker's tab and shows how it goes. The read does not depend on this window: it can close at any
+// moment (to approve a signature on the phone, say) and, reopened, shows the progress, the error
+// or the bundle waiting to be saved, all kept by the service worker (background.js). Its
+// contribution tools record an unknown broker's API and copy a failure report, both without the
+// user's values.
 
-import { brokerForUrl } from './brokers.js';
+import { BROKERS, brokerForUrl } from './brokers.js';
 import { readRecording, startRecording } from './explorer.js';
+import { gapAfter, rangeFor, showDay, todayOf } from './modes.js';
 import { apiMap, failureReport } from './report.js';
-import { validateBundle } from './validate.js';
 
-const log = document.getElementById('log');
-const since = document.getElementById('since');
-const confirmation = document.getElementById('confirmation');
-const buttons = [...document.querySelectorAll('button')];
-const reportButton = document.getElementById('report');
-/** The last failure, kept only in this popup to build its report. */
-let failure = null;
-
-function line(text, kind) {
-  const item = document.createElement('li');
-  item.textContent = text;
-  if (kind) item.className = kind;
-  log.append(item);
-}
+const $ = (id) => document.getElementById(id);
+const startButtons = [$('sync'), $('download')];
+const today = todayOf();
+const TITLES = {
+  running: 'Lectura en curso',
+  delivered: 'Entregado a Financial Hub',
+  ready: 'Paquete listo',
+  saved: 'Paquete descargado',
+  failed: 'La lectura falló',
+};
 
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 const broker = brokerForUrl(tab?.url);
 const web = /^https?:/.test(tab?.url ?? '');
+/** The read on screen: this tab's broker's, or else the latest of any broker. */
+let shown = null;
+/** The `to` day of this broker's last delivery to Financial Hub from this browser. */
+let lastTo = null;
 
-if (broker) {
-  document.getElementById('title').textContent = `Sincronizar ${broker.name}`;
-  document.getElementById('intro').textContent = broker.supported
-    ? `Lee tus órdenes y movimientos en esta pestaña de ${broker.name} y los lleva a Financial Hub, donde los revisas antes de importarlos.`
-    : `${broker.name} aún no se puede importar en Financial Hub: descarga el paquete para probar el adaptador.`;
-  document.getElementById('recent-label').textContent = `Últimos ${broker.recentDays} días`;
-  document.getElementById('controls').hidden = false;
-  document.getElementById('sync').hidden = !broker.supported;
-} else if (web) {
-  document.getElementById('intro').textContent =
-    'Este bróker aún no está soportado. Puedes ayudar a añadirlo: explora su web y adjunta el mapa a una issue.';
-}
-document.getElementById('explore').hidden = !web;
-
-function range() {
-  const picked = document.querySelector('input[name=range]:checked').value === 'since';
-  if (picked && !since.value) throw new Error('Elige la fecha desde la que leer.');
-  return picked ? { from: since.value } : {};
+function line(list, text, kind) {
+  const item = document.createElement('li');
+  item.textContent = text;
+  if (kind) item.className = kind;
+  list.append(item);
 }
 
-for (const input of document.querySelectorAll('input'))
-  input.addEventListener('change', () => {
-    const picked = document.querySelector('input[name=range]:checked').value === 'since';
-    confirmation.hidden = !(
-      broker &&
-      picked &&
-      since.value &&
-      Date.now() - Date.parse(`${since.value}T00:00:00Z`) > broker.recentDays * 86_400_000
-    );
-  });
-
-chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type === 'progress') line(message.line);
-});
-
-async function collect(step) {
-  line(`Leyendo tu cuenta en ${broker.name}…`);
-  const result = await chrome.tabs.sendMessage(tab.id, { type: 'collect', ...range() });
-  if (!result?.ok) throw Object.assign(new Error(result?.error ?? 'No se pudo leer la cuenta.'), { step });
-  // An adapter bug (a wrong shape, a credential in the payload) stops here, before anything leaves.
-  const problems = validateBundle(result.bundle);
-  if (problems.length)
-    throw Object.assign(new Error(`El paquete no es válido: ${problems.slice(0, 3).join('; ')}`), {
-      step,
-      bundle: result.bundle,
-    });
-  return result.bundle;
-}
-
-async function run(step, action) {
-  for (const button of buttons) button.disabled = true;
-  log.replaceChildren();
-  failure = null;
-  reportButton.hidden = true;
-  try {
-    await action();
-  } catch (error) {
-    line(String(error.message ?? error), 'error');
-    failure = { broker: broker?.id ?? null, step: error.step ?? step, error: error.message, bundle: error.bundle };
-    reportButton.hidden = false;
-  } finally {
-    for (const button of buttons) button.disabled = false;
-  }
+function notice(text, kind = 'error') {
+  $('notice').textContent = text ?? '';
+  $('notice').className = kind;
+  $('notice').hidden = !text;
 }
 
 function save(name, text) {
@@ -99,41 +50,165 @@ function save(name, text) {
   link.click();
   URL.revokeObjectURL(url);
 }
-const today = () => new Date().toISOString().slice(0, 10);
 
-document.getElementById('sync').addEventListener('click', () =>
-  run('sync', async () => {
-    const bundle = await collect('sync');
-    const delivered = await chrome.runtime.sendMessage({ type: 'deliver', broker: broker.id, bundle });
-    if (!delivered?.ok) throw new Error(delivered?.error ?? 'No se pudo abrir Financial Hub.');
-    line('Abierto Financial Hub: elige la cartera de destino y revisa la vista previa.');
-  }),
-);
+const selected = (name) => document.querySelector(`input[name=${name}]:checked`).value;
 
-// Saves the bundle on this computer only, to inspect it or check it with
-// `npm run validate -- <file>` while developing an adapter. Nothing is sent anywhere.
-document.getElementById('download').addEventListener('click', () =>
-  run('download', async () => {
-    save(`${broker.id}-bundle-${today()}.json`, await collect('download'));
-    line('Paquete descargado en este ordenador. Contiene tus datos: no lo compartas.', 'warn');
-  }),
-);
+/** The mode and the dates picked, or an `error` to show. */
+function picked() {
+  const mode = selected('mode');
+  const from = mode === 'new' ? $('opened').value : selected('range') === 'since' ? $('since').value : '';
+  return { mode, ...rangeFor({ mode, from, today, recentDays: broker.recentDays }) };
+}
 
-// The failure report carries no values (see report.js): it can go into a public issue.
-reportButton.addEventListener('click', async () => {
-  if (!failure) return;
-  await navigator.clipboard.writeText(JSON.stringify(failureReport(failure), null, 2));
-  line('Informe copiado. Pégalo en una issue de tipo «Fallo»: no contiene tus datos.');
+/** Shows the options of the mode, the gap warning and whether the broker will ask for a signature. */
+function refresh() {
+  const { recentDays, name } = broker;
+  const mode = selected('mode');
+  const recent = selected('range') === 'recent';
+  $('update-options').hidden = mode !== 'update';
+  $('new-options').hidden = mode !== 'new';
+  const range = picked();
+  let gap = mode === 'update' && range.from ? gapAfter({ lastTo, from: range.from }) : null;
+  if (gap?.unknown && !recent) gap = null; // a start the user picked needs no guess
+  $('gap').hidden = !gap;
+  $('gap-fix').hidden = !gap?.from;
+  if (gap?.from) {
+    const start = recent ? `los últimos ${recentDays} días` : `desde el ${showDay(range.from)}`;
+    $('gap-text').textContent = `Tu última entrega a Financial Hub desde este navegador llega hasta el ${showDay(gap.from)}: leyendo ${start} quedaría un hueco.`;
+    $('gap-fix').textContent = `Leer desde el ${showDay(gap.from)}`;
+  } else if (gap?.unknown)
+    $('gap-text').textContent = `Este navegador aún no ha entregado esta cuenta a Financial Hub. Si tu cartera no tiene movimientos de los últimos ${recentDays} días, puede quedar un hueco: elige «Desde» el día de su último movimiento.`;
+  $('confirmation').hidden = !(range.signature || (mode === 'new' && !range.from));
+  $('confirmation').textContent = `Para leer más de ${recentDays} días, ${name} te pedirá aprobar una firma (norma europea PSD2) en la app de tu móvil. Puedes cerrar esta ventana mientras tanto: la lectura sigue en la pestaña de ${name}.`;
+}
+
+function render(run) {
+  shown = run;
+  const running = run?.status === 'running';
+  for (const button of startButtons) button.disabled = running;
+  $('run').hidden = !run;
+  if (!run) return;
+  const at = new Date(run.startedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const name = BROKERS.find((item) => item.id === run.broker)?.name ?? run.broker;
+  $('run-title').textContent = `${TITLES[run.status] ?? run.status} · ${name} · ${at}`;
+  $('log').replaceChildren();
+  for (const text of run.lines) line($('log'), text);
+  if (running) line($('log'), `Puedes cerrar esta ventana: la lectura sigue en la pestaña de ${name} (no la cierres).`, 'hint');
+  if (run.status === 'failed') line($('log'), run.error, 'error');
+  $('save').hidden = run.status !== 'ready';
+  $('report').hidden = run.status !== 'failed' || !run.report;
+}
+
+/** Saves a finished download on this computer only; the service worker then drops it. */
+async function saveBundle(run) {
+  save(`${run.broker}-bundle-${today}.json`, run.bundle);
+  await chrome.runtime.sendMessage({ type: 'saved', broker: run.broker, runId: run.id });
+}
+
+async function start(purpose) {
+  notice(null);
+  const range = picked();
+  if (range.error) return notice(range.error);
+  for (const button of startButtons) button.disabled = true;
+  const answer = await chrome.runtime
+    .sendMessage({ type: 'start', broker: broker.id, tabId: tab.id, purpose, mode: range.mode, from: range.from, to: range.to })
+    .catch((error) => ({ ok: false, error: String(error.message ?? error) }));
+  if (answer?.busy) notice('Ya hay una lectura en curso: espera a que termine.', 'warn');
+  else if (!answer?.ok) notice(answer?.error ?? 'No se pudo empezar la lectura.');
+  render(answer?.run ?? shown);
+}
+
+if (broker) {
+  $('title').textContent = `Sincronizar ${broker.name}`;
+  $('intro').textContent = broker.supported
+    ? `Lee tus órdenes y movimientos en esta pestaña de ${broker.name} y los lleva a Financial Hub, donde los revisas antes de importarlos.`
+    : `${broker.name} aún no se puede importar en Financial Hub: descarga el paquete para probar el adaptador.`;
+  $('recent-label').textContent = `Últimos ${broker.recentDays} días (sin firma)`;
+  for (const id of ['since', 'opened']) $(id).max = today;
+  $('controls').hidden = false;
+  $('sync').hidden = !broker.supported;
+  lastTo = (await chrome.storage.local.get(`lastTo:${broker.id}`))[`lastTo:${broker.id}`] ?? null;
+  for (const input of document.querySelectorAll('#controls input'))
+    for (const type of ['input', 'change']) input.addEventListener(type, refresh);
+  $('gap-fix').addEventListener('click', () => {
+    document.querySelector('input[name=range][value=since]').checked = true;
+    $('since').value = lastTo ?? '';
+    refresh();
+  });
+  $('sync').addEventListener('click', () => start('sync'));
+  // "Descargar el paquete" saves the bundle on this computer only, to inspect it or check it with
+  // `npm run validate -- <file>` while developing an adapter. Nothing is sent anywhere.
+  $('download').addEventListener('click', () => start('download'));
+  refresh();
+  // A tab opened before the extension was installed or reloaded has no adapter yet.
+  const reachable = await chrome.tabs.sendMessage(tab.id, { type: 'collect-status' }).then(() => true, () => false);
+  if (!reachable)
+    notice(`Recarga la pestaña de ${broker.name}: la extensión se instaló o se actualizó después de abrirla.`, 'warn');
+} else if (web) {
+  $('intro').textContent =
+    'Este bróker aún no está soportado. Puedes ayudar a añadirlo: explora su web y adjunta el mapa a una issue.';
+}
+
+const status = (id) =>
+  chrome.runtime.sendMessage({ type: 'status', broker: id }).then((answer) => answer?.run ?? null, () => null);
+const runs = await Promise.all((broker ? [broker] : BROKERS).map((item) => status(item.id)));
+render(runs.filter(Boolean).sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null);
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'session') return;
+  for (const [key, { oldValue, newValue }] of Object.entries(changes)) {
+    if (!key.startsWith('run:') || !newValue || (broker && newValue.broker !== broker.id)) continue;
+    render(newValue);
+    // A download that finishes while this window is open is saved at once.
+    if (newValue.status === 'ready' && oldValue?.status === 'running' && oldValue.id === newValue.id) saveBundle(newValue);
+  }
 });
 
-document.getElementById('record').addEventListener('click', () =>
-  run('explore', async () => {
+$('save').addEventListener('click', () => shown?.status === 'ready' && saveBundle(shown));
+
+// The failure report carries no values (see report.js): it can go into a public issue.
+$('report').addEventListener('click', async () => {
+  if (!shown?.report) return;
+  await navigator.clipboard.writeText(JSON.stringify(shown.report, null, 2));
+  notice('Informe copiado. Pégalo en una issue de tipo «Fallo»: no contiene tus datos.', 'ok');
+});
+
+// "Explorar": the contribution tools, which run in this window only.
+$('explore').hidden = !web;
+let exploreFailure = null;
+
+async function explore(action) {
+  const log = $('explore-log');
+  const buttons = [$('record'), $('map')];
+  for (const button of buttons) button.disabled = true;
+  log.replaceChildren();
+  exploreFailure = null;
+  $('explore-report').hidden = true;
+  try {
+    await action((text) => line(log, text));
+  } catch (error) {
+    line(log, String(error.message ?? error), 'error');
+    exploreFailure = { broker: broker?.id ?? null, step: 'explore', error: error.message };
+    $('explore-report').hidden = false;
+  } finally {
+    for (const button of buttons) button.disabled = false;
+  }
+}
+
+$('explore-report').addEventListener('click', async () => {
+  if (!exploreFailure) return;
+  await navigator.clipboard.writeText(JSON.stringify(failureReport(exploreFailure), null, 2));
+  line($('explore-log'), 'Informe copiado. Pégalo en una issue de tipo «Fallo»: no contiene tus datos.');
+});
+
+$('record').addEventListener('click', () =>
+  explore(async (log) => {
     const [done] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: 'MAIN',
       func: startRecording,
     });
-    line(
+    log(
       done.result
         ? `Ya se estaba explorando (${done.result} llamadas).`
         : 'Explorando. Recorre sin recargar la página tus órdenes, movimientos y posiciones, y vuelve aquí.',
@@ -141,8 +216,8 @@ document.getElementById('record').addEventListener('click', () =>
   }),
 );
 
-document.getElementById('map').addEventListener('click', () =>
-  run('explore', async () => {
+$('map').addEventListener('click', () =>
+  explore(async (log) => {
     const [read] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: 'MAIN',
@@ -152,9 +227,7 @@ document.getElementById('map').addEventListener('click', () =>
     if (!read.result.length) throw new Error('Aún no se ha grabado ninguna llamada: navega por la web.');
     const host = new URL(tab.url).host;
     const map = apiMap({ host, records: read.result });
-    save(`mapa-api-${host}-${today()}.json`, JSON.stringify(map, null, 2));
-    line(
-      `Mapa descargado: ${map.endpoints.length} rutas. No contiene tus datos; adjúntalo a una issue «Nuevo bróker».`,
-    );
+    save(`mapa-api-${host}-${todayOf()}.json`, JSON.stringify(map, null, 2));
+    log(`Mapa descargado: ${map.endpoints.length} rutas. No contiene tus datos; adjúntalo a una issue «Nuevo bróker».`);
   }),
 );

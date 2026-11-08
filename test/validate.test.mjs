@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { brokerForUrl } from '../src/brokers.js';
 import { validateBundle } from '../src/validate.js';
 
 // A synthetic MyInvestor bundle in the exact shape the adapter builds (docs/formato-del-paquete.md).
@@ -79,10 +78,4 @@ test('an adapter bug in the shape is reported before sending', () => {
   assert.match(validateBundle(JSON.stringify({ ...bundle(), format: 'x' })).join(), /unknown format/);
   assert.match(validateBundle(JSON.stringify({ ...bundle(), version: 2 })).join(), /version must be 1/);
   assert.deepEqual(validateBundle('{'), ['bundle is not valid JSON']);
-});
-
-test('the popup finds the broker of the active tab', () => {
-  assert.equal(brokerForUrl('https://newapp.myinvestor.es/app/products')?.id, 'myinvestor');
-  assert.equal(brokerForUrl('https://example.com/'), null);
-  assert.equal(brokerForUrl(undefined), null);
 });

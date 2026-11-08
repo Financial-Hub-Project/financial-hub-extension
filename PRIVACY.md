@@ -1,7 +1,8 @@
 # Privacidad
 
-Qué lee la extensión, qué envía y qué no toca nunca. Son reglas que todo adaptador debe cumplir
-(ver [CONTRIBUTING.md](CONTRIBUTING.md)); el popup comprueba la última antes de enviar nada.
+Qué lee la extensión, qué envía, qué guarda y qué no toca nunca. Son reglas que todo adaptador
+debe cumplir (ver [CONTRIBUTING.md](CONTRIBUTING.md)); la extensión comprueba la última antes de
+guardar o enviar nada.
 
 ## Lee
 
@@ -20,6 +21,18 @@ que estás y solo con la sesión que esa página ya tiene:
 - **Descargar el paquete** lo guarda solo en tu ordenador. Contiene tus datos financieros: no lo
   compartas.
 - No se envía nada a ningún otro servidor. La extensión no tiene analítica ni código remoto.
+
+## Guarda en el navegador
+
+- **Mientras lee** (almacenamiento de sesión, que se borra al cerrar el navegador): el estado de la
+  lectura y sus mensajes, para que puedas cerrar el popup y ver al reabrirlo en qué va o qué falló;
+  el paquete ya validado, hasta que Financial Hub lo recoge o, si lo descargas, hasta que el popup
+  lo guarda en tu ordenador; y, si algo falla, el informe sin valores de abajo. Un paquete que no
+  pasa la validación no se guarda.
+- **Entre usos** (almacenamiento local): solo la fecha hasta la que llegó la última entrega a
+  Financial Hub de cada bróker, para avisarte si una actualización dejaría un hueco. Ningún dato
+  de tu cuenta.
+- Nunca guarda tu token ni tu sesión del bróker: se quedan en la página del bróker.
 
 ## Herramientas para colaborar
 
@@ -40,6 +53,6 @@ que estás y solo con la sesión que esa página ya tiene:
   página de importación de Financial Hub (ver `manifest.json`); en cualquier otra web solo actúa
   **Explorar**, y solo en la pestaña actual cuando lo pulsas.
 
-El popup rechaza cualquier paquete con una clave como `token`, `authorization`, `password` o
-`cookie`, o con un valor que parezca un token, para que un fallo de un adaptador no pueda filtrar
-una credencial.
+La extensión rechaza, antes de guardarlo o enviarlo, cualquier paquete con una clave como `token`,
+`authorization`, `password` o `cookie`, o con un valor que parezca un token, para que un fallo de
+un adaptador no pueda filtrar una credencial.
