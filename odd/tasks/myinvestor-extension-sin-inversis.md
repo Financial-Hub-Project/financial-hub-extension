@@ -37,6 +37,7 @@ cantidad en el concepto), **parcial**, **no**.
 | Tipo de Inversis (`normalize/taxonomy.ts`) | API | Propuesta |
 | --- | --- | --- |
 | Todo el efectivo (transferencias, intereses, comisiones, impuestos, dividendos en efectivo, depósitos, picos, diferencias de cambio, retenciones) | sí | Ya cubierto. |
+| Apertura de la cuenta (fila `APERTURA` o saldo inicial a cero) | parcial | La respuesta de `flows` trae `startBalance` y `endBalance`, que la extensión no guarda: el paquete los lleva y el lector emite el saldo inicial, que prueba la apertura como en Inversis. Hoy toda importación desde cero con la extensión pide «el historial desde la apertura». |
 | Compra y venta de acciones | sí | Ya cubierto (fecha de liquidación del efectivo, serverful#1674). |
 | Suscripción, reembolso, traspasos de fondos internos y externos | sí | Ya cubierto (un lote por ejecución, serverful#1673). |
 | Venta de derechos (`VENTA DE VALORES` «X DERECHOS @ n» sin orden) | efectivo | Deducir el ciclo de derechos que ya usa Inversis: alta gratuita de n derechos y su venta, ganancia completa a coste cero. Si el concepto no deja claro que son derechos, preguntar. |
@@ -75,9 +76,10 @@ bloquear la importación.
 
 | Tarea | Repos | Estado | Evidencia |
 | --- | --- | --- | --- |
-| Inventario y propuesta (este documento) | extensión | hecha, pendiente de validar con el usuario | |
+| Inventario y propuesta (este documento) | extensión | hecha; el usuario aprobó empezar (2026-11-08) | |
 | Paso de ficheros con la extensión sin botones ni textos de Inversis | web | pendiente | |
-| Venta de derechos deducida del efectivo | serverful | pendiente | |
+| Venta de derechos deducida del efectivo | serverful | en curso, rama `fix/myinvestor-bundle-rights-sale` | `import-journeys.test.ts` «deduces a free grant of the rights sold…» (rojo sin el cambio); con el paquete real del usuario no queda ninguna liquidación de acciones sin operación |
+| Apertura probada con el saldo inicial de `flows` | extensión, serverful | pendiente | |
 | Traspaso libre de pago con sentido deducido o preguntado | serverful, web | pendiente | |
 | Leer posiciones actuales y contrastar | extensión, serverful | pendiente | |
 | Operaciones corporativas sin rastro desde el catálogo | serverful | pendiente | |
