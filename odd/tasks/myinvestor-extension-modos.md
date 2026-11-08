@@ -50,11 +50,11 @@ Al entregar un paquete, la extensión abre la importación de Financial Hub con 
 
 | Tarea | Requisitos | Ruta | Estado | Evidencia |
 | --- | --- | --- | --- | --- |
-| Texto de la incidencia del hueco en web | S2, W3 | delegada: escritor bien definido (Sol medium) en el worktree de web | pendiente | |
-| Servidor al día con `main` | S1, S2 | en línea (un solo conflicto en `docs/api/CHANGELOG.md`) | pendiente | |
-| Prueba manual con la cuenta real | E1–E5, W1–W3, S1–S2 | en línea con el usuario (necesita su navegador, contraseña y firma) | pendiente | |
+| Texto de la incidencia del hueco en web | S2, W3 | delegada: escritor bien definido (Sol medium) en el worktree de web; commit y test en línea | hecha | web `fdf2f2b1`, `tests/lib/user-portfolios/import-cash-gap.test.ts` (rojo sin el cambio, verde con él); `bun run verify` 1667/1667 |
+| Servidor al día con `main` | S1, S2 | en línea (un solo conflicto en `docs/api/CHANGELOG.md`) | hecha | rama al día con `main` tras fusionar serverful#1670; `bun run verify` en verde, `openapi:guards` 0 cambios incompatibles |
+| Prueba manual con la cuenta real | E1–E5, W1–W3, S1–S2 | en línea con el usuario, después de desplegar (decisión del usuario, 2026-11-08) | pendiente | |
 | Correcciones de la prueba | según lo que salga | según tamaño | pendiente | |
-| Revisión y entrega | todos | `cross-review` en draft; ready y fusión servidor → web → extensión bajo `delivery` | pendiente | |
+| Revisión y entrega | todos | el usuario pidió fusionar y desplegar todo sin esperar a la prueba manual; sin `cross-review` (T3 no disponible en esta sesión) | en curso | |
 
 ## Requisitos
 
@@ -180,3 +180,7 @@ La hace el usuario en su navegador; la contraseña la escribe él. Solo se apunt
   manual con la cuenta real (lab con `--serverful` y `--web` de las ramas del frente), revisión y
   fusión en el orden servidor → web → extensión. Las tres fusiones son squash. Worktrees en
   `~/Projects/financial-hub/worktrees/myinvestor-extension-modos*`.
+- 2026-11-08 El usuario pidió fusionar y desplegar todo y usar la extensión desde `main`, antes de la
+  prueba manual. Orden: serverful#1670 (fusionado, `f3a627ca`), serverful#1669, web#725,
+  extensión#1. Sin `cross-review` independiente: esta sesión no tiene T3. La prueba manual con la
+  cuenta real se hace contra producción.
