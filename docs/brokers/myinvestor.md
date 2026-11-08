@@ -20,7 +20,9 @@
    - **Importar desde cero**: para una cartera nueva. Pon la fecha de apertura de tu cuenta (o una
      anterior) para no dejar nada fuera.
 3. Pulsa **Sincronizar con Financial Hub**. Para más de 90 días, MyInvestor manda una solicitud de
-   firma a la app de tu móvil (norma europea PSD2): apruébala. Puedes cerrar el popup mientras
+   firma a la app de tu móvil (norma europea PSD2): abre la app y apruébala, porque MyInvestor no
+   siempre te avisa. La extensión sí: un aviso grande arriba del popup, una notificación del
+   sistema y la etiqueta **FIRMA** en su icono, hasta que la apruebes (tienes 5 minutos). Puedes cerrar el popup mientras
    tanto; la lectura sigue en la pestaña de MyInvestor (no la cierres ni la recargues) y, al
    reabrir el popup, ves en qué va o qué falló.
 4. Se abre Financial Hub: con *Importar desde cero*, para crear la cartera nueva; con *Actualizar*,

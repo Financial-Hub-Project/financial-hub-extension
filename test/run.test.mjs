@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { begin, saved, settle } from '../src/run.js';
+import { begin, failed, progressed, saved, settle, signaturePrompt } from '../src/run.js';
 
 // Security and integrity: session storage may only ever hold a validated bundle, and only the
 // result of the read in progress, from its own tab, may be delivered or kept.
@@ -38,4 +38,30 @@ test('a read result is kept only for its own run and only as a validated bundle'
   const sync = settle(begin(null, { ...request, purpose: 'sync' }, 1).run, { runId: 'run-1', ok: true, bundle: valid }, 7, 3);
   assert.equal(sync.deliver, valid);
   assert.equal('bundle' in sync.run, false);
+});
+
+// The user must open the MyInvestor app to approve a signature, which MyInvestor itself does not
+// announce: the read says when it waits for one, and stops saying it on the next step or result.
+test('a read waits for a signature from the adapter asking for it until the next line or result', () => {
+  const request = { id: 'run-1', broker: 'myinvestor', tabId: 7, purpose: 'sync', mode: 'new', range: {} };
+  const { run } = begin(null, request, 1);
+  assert.equal(run.awaitingSignature, false);
+  const asking = progressed(run, { runId: 'run-1', line: 'Aprueba la firma.', signature: true }, 7, 2);
+  assert.equal(asking.awaitingSignature, true);
+  assert.equal(progressed(run, { runId: 'run-1', line: 'x', signature: true }, 8, 2), null);
+  assert.equal(progressed(asking, { runId: 'run-1', line: '12 movimientos leídos.' }, 7, 3).awaitingSignature, false);
+  assert.equal(settle(asking, { runId: 'run-1', ok: true, bundle: valid }, 7, 3).run.awaitingSignature, false);
+  assert.equal(settle(asking, { runId: 'run-1', ok: false, error: 'No se aprobó la firma a tiempo.' }, 7, 3).run.awaitingSignature, false);
+});
+
+test('the popup asks loudly for the signature only while the read waits for it', () => {
+  const request = { id: 'run-1', broker: 'myinvestor', tabId: 7, purpose: 'download', mode: 'new', range: {} };
+  const { run } = begin(null, request, 1);
+  assert.equal(signaturePrompt(run, 'MyInvestor'), null);
+  const asking = progressed(run, { runId: 'run-1', line: 'Aprueba la firma.', signature: true }, 7, 2);
+  const prompt = signaturePrompt(asking, 'MyInvestor');
+  assert.equal(prompt.title, 'Aprueba la firma en la app de MyInvestor');
+  assert.match(prompt.text, /Abre la app de MyInvestor en tu móvil/);
+  assert.match(prompt.text, /5 minutos/);
+  assert.equal(signaturePrompt(failed(asking, 'x', 3), 'MyInvestor'), null);
 });

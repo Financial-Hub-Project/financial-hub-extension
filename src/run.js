@@ -16,7 +16,7 @@ const MAX_TEXT = 300;
 export function begin(current, { id, broker, tabId, purpose, mode, range }, now) {
   if (current?.status === 'running') return { busy: true, run: current };
   return {
-    run: { id, broker, tabId, purpose, mode, range, status: 'running', lines: [], error: null, report: null, startedAt: now, updatedAt: now },
+    run: { id, broker, tabId, purpose, mode, range, status: 'running', awaitingSignature: false, lines: [], error: null, report: null, startedAt: now, updatedAt: now },
   };
 }
 
@@ -26,15 +26,28 @@ const owns = (run, message, tabId) =>
 
 const withLine = (run, line) => [...run.lines, String(line).slice(0, MAX_TEXT)].slice(-MAX_LINES);
 
-/** A progress line of the adapter, or null when it is not for the read in progress. */
+/** A progress line of the adapter, or null when it is not for the read in progress. A line with
+ * `signature` says the broker waits for the user to approve a signature in its app; any other
+ * line means that step is over. */
 export function progressed(run, message, tabId, now) {
   if (!owns(run, message, tabId) || typeof message.line !== 'string') return null;
-  return { ...run, lines: withLine(run, message.line), updatedAt: now };
+  return { ...run, awaitingSignature: message.signature === true, lines: withLine(run, message.line), updatedAt: now };
+}
+
+/** What the popup and the system notification say while the read waits for the user to approve a
+ * signature in the broker's app, or null. The broker does not always notify the phone, so the
+ * user has to be told to open the app. The adapter gives up after 5 minutes (content.js). */
+export function signaturePrompt(run, name) {
+  if (run?.status !== 'running' || run.awaitingSignature !== true) return null;
+  return {
+    title: `Aprueba la firma en la app de ${name}`,
+    text: `Abre la app de ${name} en tu móvil y aprueba la solicitud de firma: ${name} no siempre avisa con una notificación. Tienes 5 minutos; después la lectura se cancela.`,
+  };
 }
 
 export function failed(run, error, now) {
   const { bundle, ...rest } = run;
-  return { ...rest, status: 'failed', error: String(error).slice(0, MAX_TEXT), updatedAt: now };
+  return { ...rest, status: 'failed', awaitingSignature: false, error: String(error).slice(0, MAX_TEXT), updatedAt: now };
 }
 
 /**
@@ -46,7 +59,8 @@ export function settle(current, message, tabId, now) {
   if (!owns(current, message, tabId)) return null;
   // The result repeats every progress line, in case the last ones arrived after it.
   const lines = Array.isArray(message.lines) ? message.lines.filter((line) => typeof line === 'string') : null;
-  const run = lines ? { ...current, lines: lines.map((line) => line.slice(0, MAX_TEXT)).slice(-MAX_LINES) } : current;
+  const settled = { ...current, awaitingSignature: false };
+  const run = lines ? { ...settled, lines: lines.map((line) => line.slice(0, MAX_TEXT)).slice(-MAX_LINES) } : settled;
   if (!message.ok) {
     const error = typeof message.error === 'string' ? message.error : 'No se pudo leer la cuenta.';
     return { run: failed(run, error, now), failure: { error } };

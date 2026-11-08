@@ -24,9 +24,13 @@
       .warn { color: #8a5a00; }
       .hint { color: #555; list-style: none; margin-left: -18px; }
       .ok { color: #1b5e20; }
+      #signature { margin: 0 0 12px; padding: 12px; border: 2px solid #b45309; border-radius: 8px; background: #fff4e5; color: #4a2a00; }
+      #signature strong { display: block; font-size: 15px; margin-bottom: 4px; color: #7c2d12; }
+      #signature span { display: block; }
     </style>
   </head>
   <body>
+    <div id="signature" role="alert" hidden><strong id="signature-title"></strong><span id="signature-text"></span></div>
     <h1 id="title">Financial Hub</h1>
     <p id="intro">Abre esta ventana desde la web de tu bróker con la sesión iniciada.</p>
     <div id="controls" hidden>

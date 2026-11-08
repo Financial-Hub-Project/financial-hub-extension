@@ -6,6 +6,7 @@
 const API = 'https://api.myinvestor.es';
 const FORMAT = 'financial-hub/myinvestor-api';
 const SIGNATURE_POLL_MS = 3000;
+// The popup tells the user they have 5 minutes (signaturePrompt in run.js).
 const SIGNATURE_TIMEOUT_MS = 5 * 60 * 1000;
 const { checkComplete, dateWindows, readPages, readWindows } = globalThis.fhLists;
 
@@ -98,13 +99,17 @@ async function flows(accountUuid, from, to, log) {
     throw new Error('Navega un momento por MyInvestor y vuelve a intentarlo (falta el dispositivo).');
   const sent = await call(`/signature/api/v3/signature/${id}?method=INAPP`, { method: 'POST' });
   if (sent.status !== 200) throw new Error('MyInvestor no pudo enviar la firma al móvil');
-  log('Aprueba en la app de MyInvestor de tu móvil la solicitud de firma.');
+  // MyInvestor does not always notify the phone: the service worker tells the user to open the app.
+  log('Esperando la firma en la app de MyInvestor de tu móvil…', { signature: true });
   const deadline = Date.now() + SIGNATURE_TIMEOUT_MS;
   for (;;) {
     await new Promise((resolve) => setTimeout(resolve, SIGNATURE_POLL_MS));
     const state = await call(`/signature/api/v3/signature?signatureRequestId=${id}`);
     const status = state.data?.status;
-    if (status === 'COMPLETE') break;
+    if (status === 'COMPLETE') {
+      log('Firma aprobada: leyendo los movimientos…');
+      break;
+    }
     if (status && /REJECT|CANCEL|EXPIRE|ERROR/i.test(status))
       throw new Error('La firma se rechazó o caducó.');
     if (Date.now() > deadline) throw new Error('No se aprobó la firma a tiempo.');
@@ -207,9 +212,9 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
   current = runId;
   reply({ ok: true });
   const lines = [];
-  const log = (line) => {
+  const log = (line, { signature = false } = {}) => {
     lines.push(line);
-    chrome.runtime.sendMessage({ type: 'progress', runId, line }).catch(() => {});
+    chrome.runtime.sendMessage({ type: 'progress', runId, line, signature }).catch(() => {});
   };
   const to = isDay(message.to) ? message.to : day(new Date());
   const from = isDay(message.from) ? message.from : day(new Date(Date.now() - 89 * 86_400_000));

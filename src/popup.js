@@ -9,6 +9,7 @@ import { BROKERS, brokerForUrl } from './brokers.js';
 import { readRecording, startRecording } from './explorer.js';
 import { gapAfter, rangeFor, showDay, todayOf } from './modes.js';
 import { apiMap, failureReport } from './report.js';
+import { signaturePrompt } from './run.js';
 
 const $ = (id) => document.getElementById(id);
 const startButtons = [$('sync'), $('download')];
@@ -87,9 +88,14 @@ function render(run) {
   const running = run?.status === 'running';
   for (const button of startButtons) button.disabled = running;
   $('run').hidden = !run;
+  const name = BROKERS.find((item) => item.id === run?.broker)?.name ?? run?.broker;
+  // A pending signature goes first, above everything: the read waits for the user's phone.
+  const prompt = signaturePrompt(run, name);
+  $('signature').hidden = !prompt;
+  $('signature-title').textContent = prompt?.title ?? '';
+  $('signature-text').textContent = prompt?.text ?? '';
   if (!run) return;
   const at = new Date(run.startedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  const name = BROKERS.find((item) => item.id === run.broker)?.name ?? run.broker;
   $('run-title').textContent = `${TITLES[run.status] ?? run.status} · ${name} · ${at}`;
   $('log').replaceChildren();
   for (const text of run.lines) line($('log'), text);
