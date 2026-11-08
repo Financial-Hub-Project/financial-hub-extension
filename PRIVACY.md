@@ -33,9 +33,6 @@ que estás y solo con la sesión que esa página ya tiene:
   Financial Hub de cada bróker, para avisarte si una actualización dejaría un hueco. Ningún dato
   de tu cuenta.
 - Nunca guarda tu token ni tu sesión del bróker: se quedan en la página del bróker.
-- **Notificaciones** (permiso `notifications`): solo una, cuando el bróker espera que apruebes una
-  firma en su app. Dice el nombre del bróker y nada de tu cuenta, y se quita sola al aprobarla o si
-  la lectura acaba.
 
 ## Herramientas para colaborar
 

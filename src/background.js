@@ -28,32 +28,21 @@ function serial(task) {
 
 const readRun = async (broker) => (await chrome.storage.session.get(runKey(broker)))[runKey(broker)] ?? null;
 
-/** Saves a read and, when it starts or stops waiting for a signature, tells the user: the broker
- * itself does not always notify the phone, and the popup may be closed. */
+/** Saves a read and, when it starts or stops waiting for a signature, marks the extension's icon:
+ * the broker itself does not always notify the phone, and the popup may be closed. */
 async function writeRun(run) {
   const before = await readRun(run.broker);
   await chrome.storage.session.set({ [runKey(run.broker)]: run });
   const name = brokerById(run.broker)?.name ?? run.broker;
   const prompt = signaturePrompt(run, name);
   if (Boolean(prompt) === Boolean(signaturePrompt(before, name))) return;
-  await announceSignature(run.broker, prompt).catch(() => {});
+  await announceSignature(prompt).catch(() => {});
 }
 
-const signatureNotice = (broker) => `signature:${broker}`;
-
-/** The badge and the system notification of a pending signature, or their removal (null). */
-async function announceSignature(broker, prompt) {
+/** The action badge of a pending signature, visible with the popup closed, or its removal. */
+async function announceSignature(prompt) {
   await chrome.action.setBadgeText({ text: prompt ? 'FIRMA' : '' });
-  if (!prompt) return chrome.notifications.clear(signatureNotice(broker));
-  await chrome.action.setBadgeBackgroundColor({ color: '#b45309' });
-  await chrome.notifications.create(signatureNotice(broker), {
-    type: 'basic',
-    iconUrl: chrome.runtime.getURL('src/icons/icon-128.png'),
-    title: prompt.title,
-    message: prompt.text,
-    priority: 2,
-    requireInteraction: true,
-  });
+  if (prompt) await chrome.action.setBadgeBackgroundColor({ color: '#b45309' });
 }
 
 /** A failed read with its failure report, which carries no values (report.js): the invalid

@@ -98,7 +98,10 @@ function render(run) {
   const at = new Date(run.startedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   $('run-title').textContent = `${TITLES[run.status] ?? run.status} · ${name} · ${at}`;
   $('log').replaceChildren();
-  for (const text of run.lines) line($('log'), text);
+  // The line that asks for the signature stands out while the read waits for it.
+  run.lines.forEach((text, index) =>
+    line($('log'), text, prompt && index === run.lines.length - 1 ? 'signature-line' : undefined),
+  );
   if (running) line($('log'), `Puedes cerrar esta ventana: la lectura sigue en la pestaña de ${name} (no la cierres).`, 'hint');
   if (run.status === 'failed') line($('log'), run.error, 'error');
   $('save').hidden = run.status !== 'ready';

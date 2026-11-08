@@ -34,7 +34,7 @@ export function progressed(run, message, tabId, now) {
   return { ...run, awaitingSignature: message.signature === true, lines: withLine(run, message.line), updatedAt: now };
 }
 
-/** What the popup and the system notification say while the read waits for the user to approve a
+/** What the popup says while the read waits for the user to approve a
  * signature in the broker's app, or null. The broker does not always notify the phone, so the
  * user has to be told to open the app. The adapter gives up after 5 minutes (content.js). */
 export function signaturePrompt(run, name) {
