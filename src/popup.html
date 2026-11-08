@@ -24,7 +24,8 @@
       .warn { color: #8a5a00; }
       .hint { color: #555; list-style: none; margin-left: -18px; }
       .ok { color: #1b5e20; }
-      #signature { margin: 0 0 12px; padding: 12px; border: 2px solid #b45309; border-radius: 8px; background: #fff4e5; color: #4a2a00; }
+      /* Pinned to the top: the popup is taller than its window and opens wherever it was scrolled. */
+      #signature { position: sticky; top: 0; z-index: 1; margin: 0 0 12px; padding: 12px; border: 2px solid #b45309; border-radius: 8px; background: #fff4e5; color: #4a2a00; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); }
       #signature strong { display: block; font-size: 15px; margin-bottom: 4px; color: #7c2d12; }
       #signature span { display: block; }
     </style>
