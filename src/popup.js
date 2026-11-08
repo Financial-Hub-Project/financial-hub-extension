@@ -201,6 +201,7 @@ async function explore(action) {
     $('explore-report').hidden = false;
   } finally {
     for (const button of buttons) button.disabled = false;
+    $('record').disabled = !$('recording').hidden;
   }
 }
 
@@ -210,18 +211,45 @@ $('explore-report').addEventListener('click', async () => {
   line($('explore-log'), 'Informe copiado. Pégalo en una issue de tipo «Fallo»: no contiene tus datos.');
 });
 
+/** The calls recorded so far in this tab, or null when it is not being explored. */
+async function recorded() {
+  try {
+    const [read] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: 'MAIN',
+      func: readRecording,
+    });
+    return Array.isArray(read?.result) ? read.result.length : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The exploration goes on in the page while this window is closed (clicking the page closes it):
+ * on reopening, it says so and how many calls it has, and the icon reads REC on that tab. */
+function showRecording(count) {
+  const going = count !== null;
+  $('recording').hidden = !going;
+  $('recording').textContent = going
+    ? `Explorando esta pestaña: ${count} ${count === 1 ? 'llamada grabada' : 'llamadas grabadas'}. Esta ventana se cierra al hacer clic en la web, pero la exploración sigue. Navega sin recargar la página y, al acabar, vuelve aquí y pulsa «Descargar mapa de la API».`
+    : '';
+  $('record').textContent = going ? 'Explorando…' : 'Empezar a explorar';
+  $('record').disabled = going;
+  // null gives the tab back the global badge (FIRMA while a read waits for a signature).
+  chrome.action.setBadgeText({ tabId: tab.id, text: going ? 'REC' : null }).catch(() => {});
+  if (going) chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: '#b00020' }).catch(() => {});
+}
+
+if (web) showRecording(await recorded());
+
 $('record').addEventListener('click', () =>
-  explore(async (log) => {
-    const [done] = await chrome.scripting.executeScript({
+  explore(async () => {
+    await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: 'MAIN',
       func: startRecording,
     });
-    log(
-      done.result
-        ? `Ya se estaba explorando (${done.result} llamadas).`
-        : 'Explorando. Recorre sin recargar la página tus órdenes, movimientos y posiciones, y vuelve aquí.',
-    );
+    showRecording(await recorded());
   }),
 );
 

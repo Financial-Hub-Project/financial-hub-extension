@@ -172,6 +172,11 @@ const handlers = {
   },
 };
 
+// Exploring a broker's web records in the page until it reloads: the tab's REC badge goes with it.
+chrome.tabs.onUpdated.addListener((tabId, change) => {
+  if (change.status === 'loading') chrome.action.setBadgeText({ tabId, text: null }).catch(() => {});
+});
+
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const handler = Object.hasOwn(handlers, message?.type ?? '') ? handlers[message.type] : null;
   if (!handler || sender.id !== chrome.runtime.id) return false;

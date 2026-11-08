@@ -29,6 +29,7 @@
       #signature strong { display: block; font-size: 15px; margin-bottom: 4px; color: #7c2d12; }
       #signature span { display: block; }
       .signature-line { color: #b45309; font-weight: 700; }
+      #recording { margin: 8px 0 0; padding: 10px 12px; border: 2px solid #b00020; border-radius: 8px; background: #fdecee; color: #5f0010; font-weight: 600; }
     </style>
   </head>
   <body>
@@ -73,6 +74,7 @@
     <section id="explore" hidden>
       <h2>Colaborar</h2>
       <p>Graba qué llamadas hace esta web, sin tus datos, para añadir o ampliar un bróker.</p>
+      <p id="recording" role="status" hidden></p>
       <button id="record" class="secondary">Empezar a explorar</button>
       <button id="map" class="secondary">Descargar mapa de la API</button>
       <ol id="explore-log" aria-live="polite"></ol>
