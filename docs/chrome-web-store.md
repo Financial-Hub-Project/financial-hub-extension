@@ -17,6 +17,10 @@ es reproducible: el mismo commit da siempre los mismos bytes (entradas ordenadas
 compresión), así que cualquiera puede comprobar que lo publicado coincide con el código. Contiene
 solo `manifest.json`, `LICENSE` y `src/`; nada de tests, documentación ni skills.
 
+El paquete se lee del commit (`HEAD`, o el que se pase: `npm run package -- v0.1.0`), no de la
+carpeta: los cambios sin commit y los ficheros sin seguimiento no entran (el script lo avisa), y el
+fin de línea del checkout no cambia el resultado.
+
 El `manifest.json` del zip es el del repositorio sin los orígenes `http://localhost/*`, que solo
 sirven para probar contra un Financial Hub local (ver [CONTRIBUTING.md](../CONTRIBUTING.md)).
 `npm run check` comprueba que el manifiesto cumple lo que pide la tienda (versión, longitudes,
@@ -42,6 +46,10 @@ Descripción larga sugerida:
 > donde eliges la cartera y revisas una vista previa antes de importar nada. Tu contraseña y tu
 > sesión del bróker nunca salen de la web del bróker. Sin analítica ni código remoto. Código
 > abierto (MIT).
+>
+> Para colaboradores: **Explorar este bróker** graba, solo en la pestaña actual y solo al pulsarlo,
+> la forma de las llamadas que hace una web (rutas y campos, sin valores) para proponer un bróker
+> nuevo. El mapa se descarga en tu ordenador y no se envía a ningún sitio.
 
 Recursos gráficos que se suben en el panel (no van en el zip): el icono de 128 px
 (`src/icons/icon-128.png`), al menos una captura de 1280×800 o 640×400 y la miniatura promocional de
@@ -60,25 +68,32 @@ importación de carteras de Financial Hub, solo cuando el usuario lo pide.
 | `storage` | Guarda en el almacenamiento de sesión el estado de una lectura en curso y el paquete validado hasta que la página de importación lo recoge; en el almacenamiento local, solo la fecha de la última entrega por bróker, para avisar de huecos. |
 | `activeTab` | **Explorar este bróker** actúa solo sobre la pestaña en la que el usuario pulsa el botón, sin acceso permanente a otras webs. |
 | `scripting` | Inyecta, al pulsar **Explorar**, el registrador que anota la forma de las llamadas de la web (sin valores) en esa pestaña, y lee su resultado. |
-| `https://newapp.myinvestor.es/*` | La web de MyInvestor donde corren el adaptador y el gancho que anota dos cabeceras no secretas de la app. |
-| `https://api.myinvestor.es/*` | La API de MyInvestor de la que el adaptador lee órdenes y movimientos con la sesión que la página ya tiene. |
+| `https://newapp.myinvestor.es/*` | La web de MyInvestor: el popup reconoce que la pestaña es del bróker y ahí corren el adaptador (que llama a la API de MyInvestor con las reglas CORS de la página, por eso la API no necesita permiso propio) y el gancho que anota dos cabeceras no secretas de la app. |
 | `https://financial-hub.es/*` | La página de importación de Financial Hub, que recoge el paquete con la sesión del usuario. |
 
 **Código remoto.** No. Todo el JavaScript va en el paquete; no hay `eval`, scripts remotos ni
 analítica.
 
-**Uso de datos.** Se marca *Información financiera y de pago*: las órdenes y movimientos de
-efectivo se leen de la cuenta del usuario y se entregan a Financial Hub solo cuando pulsa
-**Sincronizar**. No se marca ninguna otra categoría: la extensión no recoge nombre, dirección,
-correo, ubicación, historial de navegación, actividad ni contenido de otras webs, y el token del
-bróker solo se usa dentro de la web del bróker, sin guardarse ni enviarse. Se certifican las tres
-declaraciones de uso limitado (sección «Uso limitado» de [PRIVACY.md](../PRIVACY.md)).
+**Uso de datos.** Se marcan estas categorías, cada una con su motivo en la descripción y en
+[PRIVACY.md](../PRIVACY.md), que dice lo mismo que la interfaz:
+
+| Categoría | Qué es y adónde va |
+| --- | --- |
+| Información financiera y de pago | Las órdenes y movimientos de efectivo del usuario. Solo al pulsar **Sincronizar**, se entregan a la página de importación de Financial Hub (o se descargan al ordenador con **Descargar el paquete**). |
+| Información de autenticación | El token de sesión que la web del bróker ya guarda. El adaptador lo usa en esa pestaña y lo manda solo a la API del propio bróker, como hace la web; nunca se guarda en la extensión ni se envía a Financial Hub. |
+| Actividad del usuario (supervisión de red) | **Explorar este bróker**, solo en la pestaña donde se pulsa y hasta recargarla, anota dominios, rutas y la forma de las llamadas que hace la web, sin valores. Se queda en el ordenador; el usuario decide si la adjunta a una issue. |
+
+No se marcan nombre, dirección, correo, ubicación, historial de navegación ni comunicaciones. Se
+certifican las tres declaraciones de uso limitado (sección «Uso limitado» de PRIVACY.md).
+
+En la descripción larga se nombra **Explorar** de forma visible (el último párrafo de la ficha de
+arriba), porque Google exige describir en la ficha cualquier función que recoja actividad.
 
 ## Subir una versión
 
 1. Sube `version` en `manifest.json` (y en `package.json`) en un PR y fusiónalo con la CI en verde.
 2. Desde `main` actualizado: `npm run check && npm test && npm run scan && npm run package`. Anota el
-   SHA-256 que imprime.
+   SHA-256 que imprime; cualquiera puede reproducirlo con el mismo commit.
 3. En el [panel de desarrollador](https://chrome.google.com/webstore/devconsole), **Paquete → Subir
    un paquete nuevo** con el zip de `dist/`. La primera vez, rellena la ficha y la pestaña de
    privacidad con lo de arriba.

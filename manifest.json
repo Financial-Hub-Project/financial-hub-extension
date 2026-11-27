@@ -32,7 +32,6 @@
   ],
   "host_permissions": [
     "https://newapp.myinvestor.es/*",
-    "https://api.myinvestor.es/*",
     "https://financial-hub.es/*",
     "http://localhost/*"
   ],

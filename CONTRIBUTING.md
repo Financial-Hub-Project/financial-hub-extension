@@ -122,7 +122,8 @@ Financial Hub.
      MyInvestor), nunca copiando la respuesta de la API entera.
 5. **Conéctalo en `manifest.json`**: una entrada en `content_scripts` para las páginas del bróker
    (y el `hook.js` opcional con `"world": "MAIN"` y `"run_at": "document_start"`), y
-   `host_permissions` para las páginas y el host de la API.
+   `host_permissions` solo para las páginas. El host de la API no hace falta: el content script
+   lo llama con el origen y las reglas CORS de la página, igual que la propia web del bróker.
 6. **Añade su comprobación de forma** en `SHAPES` de `src/validate.js` y un test en `test/` con un
    paquete sintético (valores inventados, nunca tus datos reales).
 7. **Escribe su guía** en `docs/brokers/<id>.md` a partir de `docs/brokers/_plantilla.md` y añádelo a

@@ -1,9 +1,11 @@
 // Builds the zip for the Chrome Web Store in dist/, without dependencies. The archive is
-// reproducible: sorted entries, a fixed timestamp and no compression, so the same commit always
-// gives the same bytes (and the same SHA-256, printed at the end).
+// reproducible: it is read from a commit (HEAD by default), with sorted entries, a fixed timestamp
+// and no compression, so the same commit always gives the same bytes and SHA-256.
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { packageFiles, storeManifest } from './store.mjs';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { committed, packageFiles, storeManifest, uncommitted } from './store.mjs';
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -66,20 +68,24 @@ export function zip(entries) {
   return Buffer.concat([...locals, directory, end]);
 }
 
-export function buildPackage(root = '.') {
-  const manifest = JSON.parse(readFileSync(`${root}/manifest.json`, 'utf8'));
+export function buildPackage(ref = 'HEAD') {
+  const manifest = JSON.parse(committed(ref, 'manifest.json').toString('utf8'));
   const entries = [
     { name: 'manifest.json', data: Buffer.from(`${JSON.stringify(storeManifest(manifest), null, 2)}\n`) },
-    ...packageFiles(root).map((name) => ({ name, data: readFileSync(`${root}/${name}`) })),
+    ...packageFiles(ref).map((name) => ({ name, data: committed(ref, name) })),
   ];
   return { version: manifest.version, archive: zip(entries), names: entries.map((entry) => entry.name) };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const { version, archive, names } = buildPackage();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  const ref = process.argv[2] ?? 'HEAD';
+  const dirty = uncommitted();
+  if (dirty.length)
+    console.warn(`! The package is built from ${ref}; these changes are left out:\n  ${dirty.join('\n  ')}`);
+  const { version, archive, names } = buildPackage(ref);
   mkdirSync('dist', { recursive: true });
   const path = `dist/financial-hub-extension-${version}.zip`;
   writeFileSync(path, archive);
   const sha = createHash('sha256').update(archive).digest('hex');
-  console.log(`✓ ${path}: ${names.length} files, ${archive.length} bytes\n  sha256 ${sha}`);
+  console.log(`✓ ${path} (${ref}): ${names.length} files, ${archive.length} bytes\n  sha256 ${sha}`);
 }

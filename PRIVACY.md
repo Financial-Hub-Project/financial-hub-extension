@@ -12,6 +12,16 @@ que estás y solo con la sesión que esa página ya tiene:
 - tus órdenes y sus ejecuciones (instrumento, fecha, cantidad, importes, comisiones, divisa);
 - tus movimientos de efectivo del rango que elijas (fechas, tipo, descripción, importe, saldo).
 
+Para leerlos, el adaptador hace en la web del bróker lo mismo que la propia web:
+
+- toma el token de sesión que la página guarda y lo manda **solo** a la API del bróker
+  (`api.myinvestor.es`), nunca a Financial Hub ni a nadie más;
+- consulta los identificadores de tus cuentas y carteras en esa API para pedir sus operaciones; no
+  entran en el paquete;
+- desde que se abre la web del bróker, un pequeño gancho anota en la propia página dos cabeceras
+  no secretas de la app (el id de dispositivo y la versión), que la API pide para firmar un
+  historial largo. No salen de la página.
+
 ## Envía
 
 - El paquete llega a la página de importación de Financial Hub a través del navegador: se guarda
@@ -37,9 +47,11 @@ que estás y solo con la sesión que esa página ya tiene:
 ## Herramientas para colaborar
 
 - **Explorar este bróker** graba, solo en la pestaña actual y solo tras pulsar el botón (permisos
-  `activeTab` y `scripting`), qué llamadas hace la web: rutas con los ids sustituidos, nombres de
-  parámetros y cabeceras, códigos HTTP y la forma de las respuestas (campos y tipos). Nunca guarda
-  valores. Se descarga en tu ordenador y la adjuntas tú a una issue si quieres.
+  `activeTab` y `scripting`), qué llamadas hace la web: dominios, rutas, nombres de parámetros y
+  cabeceras, códigos HTTP y la forma de las respuestas (campos y tipos). Nunca guarda valores: un
+  tramo de ruta, un nombre de campo o de parámetro que no parezca vocabulario de la API (ids,
+  números, ISIN, correos…) se sustituye por `{id}` o `{key}`. Se descarga en tu ordenador y la
+  adjuntas tú a una issue si quieres; revísala antes, porque irá a un sitio público.
 - **Copiar informe para una issue** copia la versión, el bróker, el paso, el mensaje de error, los
   recuentos, la estructura y las etiquetas fijas del bróker (tipo de operación, divisa…). Nunca
   importes, fechas, nombres ni referencias.

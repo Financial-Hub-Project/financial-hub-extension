@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { BROKERS } from '../src/brokers.js';
-import { packageFiles, pngSize, storeManifest } from './store.mjs';
+import { packageFiles, pngSize, storeManifest, uncommitted } from './store.mjs';
 
 const problems = [];
 const scripts = (dir) =>
@@ -38,8 +38,9 @@ for (const broker of BROKERS) {
   }
 }
 // What the Chrome Web Store asks of the manifest and of the package built from it.
-const VERSION = /^\d+(?:\.\d+){0,3}$/;
-if (!VERSION.test(manifest.version)) problems.push(`version ${manifest.version} is not 1 to 4 dot-separated integers`);
+const VERSION = /^(?:0|[1-9]\d{0,4})(?:\.(?:0|[1-9]\d{0,4})){0,3}$/;
+if (!VERSION.test(manifest.version) || manifest.version.split('.').some((part) => Number(part) > 65535))
+  problems.push(`version ${manifest.version} is not 1 to 4 dot-separated integers from 0 to 65535`);
 if (manifest.name.length > 75) problems.push('name is longer than 75 characters');
 if (manifest.description.length > 132) problems.push('description is longer than 132 characters');
 for (const icons of [manifest.icons, manifest.action.default_icon])
@@ -51,9 +52,10 @@ for (const icons of [manifest.icons, manifest.action.default_icon])
 if (!manifest.icons?.['128']) problems.push('the store needs a 128×128 icon');
 const store = storeManifest(manifest);
 if (JSON.stringify(store).includes('localhost')) problems.push('the store manifest still reaches localhost');
-const packaged = new Set(packageFiles());
+// The package is built from the commit: every file the manifest names must be tracked.
+const packaged = new Set([...packageFiles(), ...uncommitted().filter((file) => existsSync(file))]);
 for (const file of [...named, ...Object.values(manifest.icons)])
-  if (!packaged.has(file)) problems.push(`the package leaves out ${file}`);
+  if (!packaged.has(file)) problems.push(`the package leaves out ${file} (is it committed?)`);
 if (problems.length) {
   for (const problem of problems) console.error(`✗ ${problem}`);
   process.exit(1);
