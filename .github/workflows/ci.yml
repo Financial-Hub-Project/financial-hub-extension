@@ -21,3 +21,5 @@ jobs:
       - run: npm test
       - name: No personal data in the repository
         run: node scripts/scan-data.mjs
+      - name: Chrome Web Store package
+        run: npm run package

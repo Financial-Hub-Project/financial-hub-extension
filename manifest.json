@@ -3,13 +3,21 @@
   "name": "Financial Hub",
   "version": "0.1.0",
   "description": "Sincroniza tu bróker con tu cartera de Financial Hub, leyendo tus datos en tu propia sesión.",
+  "homepage_url": "https://github.com/Financial-Hub-Project/financial-hub-extension",
   "minimum_chrome_version": "111",
   "icons": {
     "16": "src/icons/icon-16.png",
+    "32": "src/icons/icon-32.png",
     "48": "src/icons/icon-48.png",
     "128": "src/icons/icon-128.png"
   },
   "action": {
+    "default_icon": {
+      "16": "src/icons/icon-16.png",
+      "32": "src/icons/icon-32.png",
+      "48": "src/icons/icon-48.png",
+      "128": "src/icons/icon-128.png"
+    },
     "default_popup": "src/popup.html",
     "default_title": "Sincronizar con Financial Hub"
   },

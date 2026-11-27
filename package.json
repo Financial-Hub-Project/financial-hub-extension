@@ -12,6 +12,7 @@
     "check": "node scripts/check.mjs",
     "test": "node --test test/",
     "validate": "node scripts/validate-bundle.mjs",
-    "scan": "node scripts/scan-data.mjs"
+    "scan": "node scripts/scan-data.mjs",
+    "package": "node scripts/package.mjs"
   }
 }

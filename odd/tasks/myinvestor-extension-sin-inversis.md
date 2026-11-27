@@ -88,7 +88,6 @@ bloquear la importación.
 ## Registro
 
 - 2026-11-08 Importación desde cero real: rechazada por traspasos en varios lotes (arreglado,
-  serverful#1673) y 14 compras en USD sin cruzar (arreglado, serverful#1674). Queda una venta de
-  derechos de Amper (julio de 2025) sin orden en la API y dos traspasos libres de pago sin
-  sentido. Exploración de la web y la API de MyInvestor: no hay listado de operaciones de
-  valores. El usuario decide que la extensión reemplace a Inversis.
+  serverful#1673) y compras en USD sin cruzar (arreglado, serverful#1674). Queda una venta de
+  derechos sin orden en la API y traspasos libres de pago sin sentido. Exploración de la web y la
+  API de MyInvestor: no hay listado de operaciones de valores. El usuario decide que la extensión reemplace a Inversis.

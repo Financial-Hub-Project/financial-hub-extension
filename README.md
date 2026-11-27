@@ -28,6 +28,11 @@ Abre tu agente en una carpeta vacía y pégale:
 El agente descarga el repositorio, comprueba que todo funciona y te guía en los dos clics que
 Chrome exige hacer a mano.
 
+### Desde Chrome Web Store
+
+La publicación en Chrome Web Store está en preparación; cómo se construye y qué se declara está en
+[docs/chrome-web-store.md](docs/chrome-web-store.md).
+
 ### A mano
 
 1. Descarga este repositorio (`git clone` o **Code → Download ZIP** y descomprímelo).

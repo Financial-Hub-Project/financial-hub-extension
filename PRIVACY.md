@@ -53,6 +53,17 @@ que estás y solo con la sesión que esa página ya tiene:
   página de importación de Financial Hub (ver `manifest.json`); en cualquier otra web solo actúa
   **Explorar**, y solo en la pestaña actual cuando lo pulsas.
 
+## Uso limitado
+
+- Los datos que lee la extensión solo se usan para la importación que pides en Financial Hub.
+- No se venden ni se ceden a terceros, ni se usan para publicidad, para valorar tu solvencia o
+  para conceder créditos.
+- Nadie los lee salvo que tú lo pidas (por ejemplo, adjuntando un informe a una issue) o lo exija
+  la ley.
+
+La versión de Chrome Web Store es el mismo código que este repositorio, sin acceso a `localhost`
+(ver [docs/chrome-web-store.md](docs/chrome-web-store.md)).
+
 La extensión rechaza, antes de guardarlo o enviarlo, cualquier paquete con una clave como `token`,
 `authorization`, `password` o `cookie`, o con un valor que parezca un token, para que un fallo de
 un adaptador no pueda filtrar una credencial.

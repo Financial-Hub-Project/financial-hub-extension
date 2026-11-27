@@ -160,6 +160,9 @@ worker (`chrome://extensions` → la extensión → **Inspeccionar vistas: servi
 chrome.storage.local.set({ origin: 'http://localhost:3000' }); // volver: chrome.storage.local.remove('origin')
 ```
 
+Solo funciona con la extensión cargada desde el repositorio: el paquete de Chrome Web Store
+(`npm run package`) quita los permisos de `localhost`.
+
 ## Arreglar lo que falle
 
 Dónde mirar:
