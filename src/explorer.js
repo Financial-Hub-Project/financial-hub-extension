@@ -11,15 +11,23 @@ export function startRecording() {
   const state = { records: [] };
   window.__fhExplorer = state;
 
-  // Ids, ISINs, uuids and long tokens in a path become placeholders.
-  const segment = (part) =>
-    /^\d+$/.test(part)
-      ? '{id}'
-      : /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(part)
-        ? '{isin}'
-        : /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(part) || part.length > 24
-          ? '{id}'
-          : part;
+  // Path segments, object keys and query names are kept only when they read like the API's own
+  // vocabulary (`orders`, `v2`, `settlementDate`); anything else (ids, ISINs, uuids, e-mails,
+  // long tokens) becomes a placeholder, because a web app may put a user's value there. A value
+  // written as a plain word (a name, say) cannot be told apart from vocabulary and stays, which is
+  // why the user reviews the map before attaching it anywhere.
+  const WORD = /^[A-Za-z_$][\w$-]{0,39}$/;
+  const plain = (part) => {
+    let text = part;
+    try {
+      text = decodeURIComponent(part);
+    } catch {
+      // A malformed escape is judged as written.
+    }
+    return WORD.test(text) && !/\d{3}/.test(text) && !/@/.test(text) && !/^[A-Z]{2}[A-Z0-9]{9}\d$/.test(text);
+  };
+  const segment = (part) => (part === '' || (part.length <= 24 && plain(part)) ? part : '{id}');
+  const key = (name) => (plain(name) ? name : '{key}');
   const shape = (value, depth = 0) => {
     if (depth > 8) return '…';
     if (value === null) return 'null';
@@ -29,12 +37,12 @@ export function startRecording() {
       for (const item of value.slice(0, 50))
         if (item && typeof item === 'object' && !Array.isArray(item)) {
           objects = true;
-          for (const [key, child] of Object.entries(item)) merged[key] ??= shape(child, depth + 1);
+          for (const [name, child] of Object.entries(item)) merged[key(name)] ??= shape(child, depth + 1);
         }
       return value.length ? [objects ? merged : shape(value[0], depth + 1)] : [];
     }
     if (typeof value === 'object')
-      return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, shape(v, depth + 1)]));
+      return Object.fromEntries(Object.entries(value).map(([name, child]) => [key(name), shape(child, depth + 1)]));
     if (typeof value === 'string') return DATE.test(value) ? 'date' : 'string';
     return typeof value;
   };
@@ -56,7 +64,7 @@ export function startRecording() {
     state.records.push({
       method: String(method || 'GET').toUpperCase(),
       path: `${parsed.origin}${parsed.pathname.split('/').map(segment).join('/')}`,
-      query: [...parsed.searchParams.keys()],
+      query: [...new Set([...parsed.searchParams.keys()].map(key))],
       // Header names only: they tell how the page authenticates, never with what.
       requestHeaders: headers.map((name) => name.toLowerCase()),
       requestBody: typeof body === 'string' ? parse(body) : null,

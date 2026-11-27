@@ -41,7 +41,7 @@ o su comprobación en `src/validate.js`.
 2. Documenta `format`, `version: 1` y los campos en `docs/formato-del-paquete.md`.
 3. Añade la entrada en `src/brokers.js` (`supported: false`).
 4. Escribe `src/brokers/<id>/content.js` partiendo del de MyInvestor: responde a `collect` en el acto con `{ ok: true }`, informa con `progress`, envía el resultado con `collected` (`{ ok: true, bundle }` o `{ ok: false, error }`) y responde a `collect-status` (contrato en `CONTRIBUTING.md`, paso 4).
-5. Conecta `content_scripts` y `host_permissions` en `manifest.json`.
+5. Conecta `content_scripts` y `host_permissions` (solo las páginas, no la API) en `manifest.json`.
 6. Añade la forma en `SHAPES` de `src/validate.js` y un test sintético en `test/`.
 7. Crea `docs/brokers/<id>.md` desde `docs/brokers/_plantilla.md` y añade el bróker a la tabla del README.
 8. Prueba con la skill `probar-extension` y abre el PR con `resolver-issue`.

@@ -12,6 +12,16 @@ que estás y solo con la sesión que esa página ya tiene:
 - tus órdenes y sus ejecuciones (instrumento, fecha, cantidad, importes, comisiones, divisa);
 - tus movimientos de efectivo del rango que elijas (fechas, tipo, descripción, importe, saldo).
 
+Para leerlos, el adaptador hace en la web del bróker lo mismo que la propia web:
+
+- toma el token de sesión que la página guarda y lo manda **solo** a la API del bróker
+  (`api.myinvestor.es`), nunca a Financial Hub ni a nadie más;
+- consulta los identificadores de tus cuentas y carteras en esa API para pedir sus operaciones; no
+  entran en el paquete;
+- desde que se abre la web del bróker, un pequeño gancho anota en la propia página dos cabeceras
+  no secretas de la app (el id de dispositivo y la versión); el adaptador las manda, como la web,
+  solo a la API del bróker, que las pide para firmar un historial largo.
+
 ## Envía
 
 - El paquete llega a la página de importación de Financial Hub a través del navegador: se guarda
@@ -37,9 +47,13 @@ que estás y solo con la sesión que esa página ya tiene:
 ## Herramientas para colaborar
 
 - **Explorar este bróker** graba, solo en la pestaña actual y solo tras pulsar el botón (permisos
-  `activeTab` y `scripting`), qué llamadas hace la web: rutas con los ids sustituidos, nombres de
-  parámetros y cabeceras, códigos HTTP y la forma de las respuestas (campos y tipos). Nunca guarda
-  valores. Se descarga en tu ordenador y la adjuntas tú a una issue si quieres.
+  `activeTab` y `scripting`), qué llamadas hace la web: dominios, rutas, nombres de parámetros y
+  cabeceras, códigos HTTP y la forma de las respuestas (campos y tipos), sin los valores de los
+  campos. Un tramo de ruta, un nombre de campo o de parámetro que no parezca vocabulario de la API
+  (ids, números, ISIN, correos, tokens largos) se sustituye por `{id}` o `{key}`; un dato escrito
+  como una palabra normal (por ejemplo, un nombre dentro de una ruta) no se puede distinguir y se
+  queda. El mapa se descarga en tu ordenador y la adjuntas tú a una issue si quieres: **revísalo
+  antes**, porque irá a un sitio público.
 - **Copiar informe para una issue** copia la versión, el bróker, el paso, el mensaje de error, los
   recuentos, la estructura y las etiquetas fijas del bróker (tipo de operación, divisa…). Nunca
   importes, fechas, nombres ni referencias.
@@ -47,11 +61,23 @@ que estás y solo con la sesión que esa página ya tiene:
 ## Nunca
 
 - Nunca lee, guarda ni envía tu contraseña, tu PIN ni códigos de un solo uso.
-- Nunca envía tu sesión ni tu token del bróker a ningún sitio: se quedan en la web del bróker.
+- Nunca envía tu sesión ni tu token del bróker a ningún sitio distinto de la API del propio bróker,
+  que es adonde ya los manda su web.
 - Nunca envía más de lo que Financial Hub necesita: ni números de cuenta, ni DNI, ni dirección.
 - Nunca se ejecuta por su cuenta en páginas distintas de las webs de los brókers soportados y la
   página de importación de Financial Hub (ver `manifest.json`); en cualquier otra web solo actúa
   **Explorar**, y solo en la pestaña actual cuando lo pulsas.
+
+## Uso limitado
+
+- Los datos que lee la extensión solo se usan para la importación que pides en Financial Hub.
+- No se venden ni se ceden a terceros, ni se usan para publicidad, para valorar tu solvencia o
+  para conceder créditos.
+- Nadie los lee salvo que tú lo pidas (por ejemplo, adjuntando un informe a una issue) o lo exija
+  la ley.
+
+La versión de Chrome Web Store es el mismo código que este repositorio, sin acceso a `localhost`
+(ver [docs/chrome-web-store.md](docs/chrome-web-store.md)).
 
 La extensión rechaza, antes de guardarlo o enviarlo, cualquier paquete con una clave como `token`,
 `authorization`, `password` o `cookie`, o con un valor que parezca un token, para que un fallo de

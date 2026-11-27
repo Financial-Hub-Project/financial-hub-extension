@@ -78,7 +78,7 @@ bloquear la importación.
 | --- | --- | --- | --- |
 | Inventario y propuesta (este documento) | extensión | hecha; el usuario aprobó empezar (2026-11-08) | |
 | Paso de ficheros con la extensión sin botones ni textos de Inversis | web | pendiente | |
-| Venta de derechos deducida del efectivo | serverful | hecha: serverful#1675, en producción (`7e0d2c5c`) | `import-journeys.test.ts` «deduces a free grant of the rights sold…» (rojo sin el cambio); con el paquete real del usuario no queda ninguna liquidación de acciones sin operación |
+| Venta de derechos deducida del efectivo | serverful | hecha: serverful#1675, en producción (`7e0d2c5c`) | `import-journeys.test.ts` «deduces a free grant of the rights sold…» (rojo sin el cambio) |
 | Apertura probada con el saldo inicial de `flows` | extensión, serverful | pendiente | |
 | Traspaso libre de pago con sentido deducido o preguntado | serverful, web | pendiente | |
 | Leer posiciones actuales y contrastar | extensión, serverful | pendiente | |
@@ -87,8 +87,6 @@ bloquear la importación.
 
 ## Registro
 
-- 2026-11-08 Importación desde cero real: rechazada por traspasos en varios lotes (arreglado,
-  serverful#1673) y 14 compras en USD sin cruzar (arreglado, serverful#1674). Queda una venta de
-  derechos de Amper (julio de 2025) sin orden en la API y dos traspasos libres de pago sin
-  sentido. Exploración de la web y la API de MyInvestor: no hay listado de operaciones de
-  valores. El usuario decide que la extensión reemplace a Inversis.
+- 2026-11-08 Importación desde cero: aparecieron casos que el servidor no cubría (arreglados en
+  serverful#1673 y serverful#1674) y otros sin orden en la API. Exploración de la web y la API de
+  MyInvestor: no hay listado de operaciones de valores. El usuario decide que la extensión reemplace a Inversis.
