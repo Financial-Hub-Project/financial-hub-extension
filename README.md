@@ -62,7 +62,8 @@ para una issue** (cuando algo falla). El flujo completo está en [CONTRIBUTING.m
 
 Tu contraseña y tu sesión del bróker nunca salen de la web del bróker; la extensión solo envía las
 órdenes y movimientos que Financial Hub necesita, a Financial Hub y solo cuando pulsas. Los mapas e
-informes para colaborar no contienen valores. Detalle en [PRIVACY.md](PRIVACY.md).
+informes para colaborar no llevan los valores de tus datos (revisa el mapa antes de adjuntarlo).
+Detalle en [PRIVACY.md](PRIVACY.md).
 
 ## Licencia
 

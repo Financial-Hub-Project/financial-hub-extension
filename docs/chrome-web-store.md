@@ -48,8 +48,8 @@ Descripción larga sugerida:
 > abierto (MIT).
 >
 > Para colaboradores: **Explorar este bróker** graba, solo en la pestaña actual y solo al pulsarlo,
-> la forma de las llamadas que hace una web (rutas y campos, sin valores) para proponer un bróker
-> nuevo. El mapa se descarga en tu ordenador y no se envía a ningún sitio.
+> la forma de las llamadas que hace una web (rutas y nombres de campos, sin sus valores) para
+> proponer un bróker nuevo. El mapa se descarga en tu ordenador y no se envía a ningún sitio.
 
 Recursos gráficos que se suben en el panel (no van en el zip): el icono de 128 px
 (`src/icons/icon-128.png`), al menos una captura de 1280×800 o 640×400 y la miniatura promocional de
@@ -81,7 +81,7 @@ analítica.
 | --- | --- |
 | Información financiera y de pago | Las órdenes y movimientos de efectivo del usuario. Solo al pulsar **Sincronizar**, se entregan a la página de importación de Financial Hub (o se descargan al ordenador con **Descargar el paquete**). |
 | Información de autenticación | El token de sesión que la web del bróker ya guarda. El adaptador lo usa en esa pestaña y lo manda solo a la API del propio bróker, como hace la web; nunca se guarda en la extensión ni se envía a Financial Hub. |
-| Actividad del usuario (supervisión de red) | **Explorar este bróker**, solo en la pestaña donde se pulsa y hasta recargarla, anota dominios, rutas y la forma de las llamadas que hace la web, sin valores. Se queda en el ordenador; el usuario decide si la adjunta a una issue. |
+| Actividad del usuario (supervisión de red) | **Explorar este bróker**, solo en la pestaña donde se pulsa y hasta recargarla, anota dominios, rutas y la forma de las llamadas que hace la web, sin los valores de los campos (los ids y datos reconocibles de las rutas se sustituyen; ver PRIVACY.md). Se queda en el ordenador; el usuario decide si la adjunta a una issue. |
 
 No se marcan nombre, dirección, correo, ubicación, historial de navegación ni comunicaciones. Se
 certifican las tres declaraciones de uso limitado (sección «Uso limitado» de PRIVACY.md).

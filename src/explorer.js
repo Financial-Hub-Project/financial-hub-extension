@@ -13,7 +13,9 @@ export function startRecording() {
 
   // Path segments, object keys and query names are kept only when they read like the API's own
   // vocabulary (`orders`, `v2`, `settlementDate`); anything else (ids, ISINs, uuids, e-mails,
-  // names, long tokens) becomes a placeholder, because a web app may put a user's value there.
+  // long tokens) becomes a placeholder, because a web app may put a user's value there. A value
+  // written as a plain word (a name, say) cannot be told apart from vocabulary and stays, which is
+  // why the user reviews the map before attaching it anywhere.
   const WORD = /^[A-Za-z_$][\w$-]{0,39}$/;
   const plain = (part) => {
     let text = part;
@@ -24,7 +26,7 @@ export function startRecording() {
     }
     return WORD.test(text) && !/\d{3}/.test(text) && !/@/.test(text) && !/^[A-Z]{2}[A-Z0-9]{9}\d$/.test(text);
   };
-  const segment = (part) => (part === '' || plain(part) ? part : '{id}');
+  const segment = (part) => (part === '' || (part.length <= 24 && plain(part)) ? part : '{id}');
   const key = (name) => (plain(name) ? name : '{key}');
   const shape = (value, depth = 0) => {
     if (depth > 8) return '…';

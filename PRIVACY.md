@@ -19,8 +19,8 @@ Para leerlos, el adaptador hace en la web del bróker lo mismo que la propia web
 - consulta los identificadores de tus cuentas y carteras en esa API para pedir sus operaciones; no
   entran en el paquete;
 - desde que se abre la web del bróker, un pequeño gancho anota en la propia página dos cabeceras
-  no secretas de la app (el id de dispositivo y la versión), que la API pide para firmar un
-  historial largo. No salen de la página.
+  no secretas de la app (el id de dispositivo y la versión); el adaptador las manda, como la web,
+  solo a la API del bróker, que las pide para firmar un historial largo.
 
 ## Envía
 
@@ -48,10 +48,12 @@ Para leerlos, el adaptador hace en la web del bróker lo mismo que la propia web
 
 - **Explorar este bróker** graba, solo en la pestaña actual y solo tras pulsar el botón (permisos
   `activeTab` y `scripting`), qué llamadas hace la web: dominios, rutas, nombres de parámetros y
-  cabeceras, códigos HTTP y la forma de las respuestas (campos y tipos). Nunca guarda valores: un
-  tramo de ruta, un nombre de campo o de parámetro que no parezca vocabulario de la API (ids,
-  números, ISIN, correos…) se sustituye por `{id}` o `{key}`. Se descarga en tu ordenador y la
-  adjuntas tú a una issue si quieres; revísala antes, porque irá a un sitio público.
+  cabeceras, códigos HTTP y la forma de las respuestas (campos y tipos), sin los valores de los
+  campos. Un tramo de ruta, un nombre de campo o de parámetro que no parezca vocabulario de la API
+  (ids, números, ISIN, correos, tokens largos) se sustituye por `{id}` o `{key}`; un dato escrito
+  como una palabra normal (por ejemplo, un nombre dentro de una ruta) no se puede distinguir y se
+  queda. El mapa se descarga en tu ordenador y la adjuntas tú a una issue si quieres: **revísalo
+  antes**, porque irá a un sitio público.
 - **Copiar informe para una issue** copia la versión, el bróker, el paso, el mensaje de error, los
   recuentos, la estructura y las etiquetas fijas del bróker (tipo de operación, divisa…). Nunca
   importes, fechas, nombres ni referencias.
@@ -59,7 +61,8 @@ Para leerlos, el adaptador hace en la web del bróker lo mismo que la propia web
 ## Nunca
 
 - Nunca lee, guarda ni envía tu contraseña, tu PIN ni códigos de un solo uso.
-- Nunca envía tu sesión ni tu token del bróker a ningún sitio: se quedan en la web del bróker.
+- Nunca envía tu sesión ni tu token del bróker a ningún sitio distinto de la API del propio bróker,
+  que es adonde ya los manda su web.
 - Nunca envía más de lo que Financial Hub necesita: ni números de cuenta, ni DNI, ni dirección.
 - Nunca se ejecuta por su cuenta en páginas distintas de las webs de los brókers soportados y la
   página de importación de Financial Hub (ver `manifest.json`); en cualquier otra web solo actúa
